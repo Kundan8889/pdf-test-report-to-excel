@@ -5,6 +5,7 @@ import PdfUploader from '../components/PdfUploader';
 import UploadProgress from '../components/UploadProgress';
 import TemperatureTable from '../components/TemperatureTable';
 import ValidationWarning from '../components/ValidationWarning';
+import TestInformation from '../components/TestInformation';
 import DownloadButton from '../components/DownloadButton';
 import ConfirmModal from '../components/ConfirmModal';
 
@@ -32,7 +33,7 @@ export default function Home() {
 
   // Extracted Application State
   const [currentFile, setCurrentFile] = useState(null);
-  const [processingStage, setProcessingStage] = useState('idle'); // 'idle' | 'uploading' | 'analyzing' | 'extracting' | 'completed' | 'error'
+  const [processingStage, setProcessingStage] = useState('idle');
   const [uploadProgressPercent, setUploadProgressPercent] = useState(0);
   const [processingDetails, setProcessingDetails] = useState(null);
   const [extractionResult, setExtractionResult] = useState(null);
@@ -106,7 +107,7 @@ export default function Home() {
         setProcessingDetails({
           title: 'Report Processing Complete',
           description: `Calibrated 2-tier thermal matrix extracted from "${data.original_filename || file.name}".`,
-          technicalStatus: 'Ready for Excel generation • Complies with test limits'
+          technicalStatus: 'Ready for Excel & Word generation • Complies with test limits'
         });
         setExtractionResult(data);
         setOriginalExtraction(JSON.parse(JSON.stringify(data)));
@@ -183,7 +184,6 @@ export default function Home() {
 
     setIsGeneratingExcel(true);
     try {
-      // Dynamic filename based on Serial No. (e.g. 4183_1192_0826.xlsx) or Report No.
       const rawIdent = (metadata.serial_number || metadata.report_number || 'Temperature_Rise_Test_Report').trim();
       const sanitizedName = rawIdent.replace(/[\/\\?%*:|"<>]/g, '_').trim();
       const fileName = `${sanitizedName}.xlsx`;
@@ -215,7 +215,6 @@ export default function Home() {
 
     setIsGeneratingWord(true);
     try {
-      // Dynamic filename based on Serial No. (e.g. 5265_0863_0626.docx)
       const rawIdent = (metadata.serial_number || metadata.report_number || 'Temperature_Rise_Test_Report').trim();
       const sanitizedName = rawIdent.replace(/[\/\\?%*:|"<>]/g, '_').trim();
       const fileName = `${sanitizedName}.docx`;
@@ -271,23 +270,6 @@ export default function Home() {
           />
         </div>
       </header>
-
-      {/* Modern Status Strip */}
-      <div className="status-strip">
-        <div className="status-item">
-          <span className={`status-indicator ${isServerOnline ? 'online' : 'offline'}`}></span>
-          <span className="status-label">Backend Pipeline:</span>
-          <span className="status-value">{serverStatus}</span>
-        </div>
-        <div className="status-item">
-          <span className="status-label">Engine:</span>
-          <span className="status-value">Multi-Format OCR Engine + 2-Tier Thermal Matrix</span>
-        </div>
-        <div className="status-item">
-          <span className="status-label">A4 Formats:</span>
-          <span className="status-value">Excel (.xlsx) & Word (.docx)</span>
-        </div>
-      </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         {/* Step 1: Upload */}
