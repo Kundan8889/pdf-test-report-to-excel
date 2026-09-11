@@ -38,8 +38,8 @@ class ExtractionService:
 
         all_ocr_items: List[Dict[str, Any]] = []
 
-        # 1. OCR Extraction with memory safety and auto-rotation
-        for p_idx, img_obj in enumerate(images):
+        # 1. OCR Extraction with memory safety and auto-rotation (Only Page 1)
+        for p_idx, img_obj in enumerate(images[:1]):
             try:
                 data = getattr(img_obj, "data", None)
                 if data:

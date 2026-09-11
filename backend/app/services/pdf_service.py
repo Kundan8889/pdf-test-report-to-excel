@@ -17,7 +17,8 @@ class PDFService:
         try:
             with pdfplumber.open(file_path) as pdf:
                 page_count = len(pdf.pages)
-                for page_idx, page in enumerate(pdf.pages):
+                # Only extract the top / first page (Page 1) as requested
+                for page_idx, page in enumerate(pdf.pages[:1]):
                     txt = page.extract_text(layout=True) or ""
                     if txt.strip():
                         extracted_text.append(txt)
@@ -34,11 +35,11 @@ class PDFService:
         except Exception as e:
             print(f"pdfplumber reading error: {e}")
 
-        # Fallback & image extraction via pypdf
+        # Fallback & image extraction via pypdf (only page 1)
         try:
             reader = pypdf.PdfReader(file_path)
             page_count = len(reader.pages)
-            for page in reader.pages:
+            for page in reader.pages[:1]:
                 if not extracted_text:
                     t = page.extract_text() or ""
                     if t.strip():
