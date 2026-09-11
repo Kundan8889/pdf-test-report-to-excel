@@ -6,6 +6,7 @@ import UploadProgress from '../components/UploadProgress';
 import TemperatureTable from '../components/TemperatureTable';
 import ValidationWarning from '../components/ValidationWarning';
 import DownloadButton from '../components/DownloadButton';
+import ConfirmModal from '../components/ConfirmModal';
 
 export default function Home() {
   const [theme, setTheme] = useState(() => {
@@ -16,6 +17,7 @@ export default function Home() {
   const [isUploading, setIsUploading] = useState(false);
   const [isGeneratingExcel, setIsGeneratingExcel] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
   // Sync theme with html data-theme and localStorage
   useEffect(() => {
@@ -148,9 +150,12 @@ export default function Home() {
   };
 
   const handleResetAll = () => {
-    if (window.confirm('Are you sure you want to reset and clear all data?')) {
-      handleUploadAnother();
-    }
+    setIsResetModalOpen(true);
+  };
+
+  const handleConfirmReset = () => {
+    setIsResetModalOpen(false);
+    handleUploadAnother();
   };
 
   const handleResetToOriginal = () => {
@@ -293,6 +298,18 @@ export default function Home() {
           />
         </div>
       </div>
+
+      {/* Enterprise Custom Confirmation Modal */}
+      <ConfirmModal
+        isOpen={isResetModalOpen}
+        title="Reset Document & Matrix?"
+        message="Are you sure you want to reset? This will clear the currently loaded test report, all extracted thermal channels, and any manual edits."
+        confirmLabel="Yes, Reset Everything"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={handleConfirmReset}
+        onCancel={() => setIsResetModalOpen(false)}
+      />
     </div>
   );
 }
