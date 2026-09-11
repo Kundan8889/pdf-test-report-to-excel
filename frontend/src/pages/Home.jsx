@@ -16,6 +16,7 @@ export default function Home() {
   const [isServerOnline, setIsServerOnline] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isGeneratingExcel, setIsGeneratingExcel] = useState(false);
+  const [isGeneratingWord, setIsGeneratingWord] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
@@ -206,14 +207,46 @@ export default function Home() {
     }
   };
 
+  const handleDownloadWord = async () => {
+    if (!metadata || intervals.length === 0) {
+      alert('Please upload a test report first.');
+      return;
+    }
+
+    setIsGeneratingWord(true);
+    try {
+      // Dynamic filename based on Serial No. (e.g. 5265_0863_0626.docx)
+      const rawIdent = (metadata.serial_number || metadata.report_number || 'Temperature_Rise_Test_Report').trim();
+      const sanitizedName = rawIdent.replace(/[\/\\?%*:|"<>]/g, '_').trim();
+      const fileName = `${sanitizedName}.docx`;
+
+      const res = await api.generateWord(metadata, intervals, fileName);
+
+      if (res.success && res.data?.download_url) {
+        const downloadLink = document.createElement('a');
+        downloadLink.href = res.data.download_url;
+        downloadLink.setAttribute('download', res.data.file_name || fileName);
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+      } else {
+        alert(res.message || 'Failed to generate Word document');
+      }
+    } catch (err) {
+      alert(`Word download error: ${err.message}`);
+    } finally {
+      setIsGeneratingWord(false);
+    }
+  };
+
   const isReadyForExport = metadata !== null && intervals.length > 0;
 
   return (
     <div className="app-container">
       <header className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ margin: 0 }}>PDF Test Report to Excel</h1>
-          <p style={{ margin: '0.25rem 0 0 0' }}>Convert laboratory thermal & temperature rise test reports into structured Excel spreadsheets</p>
+          <h1 style={{ margin: 0 }}>PDF Test Report to Excel & Word</h1>
+          <p style={{ margin: '0.25rem 0 0 0' }}>Convert laboratory thermal & temperature rise test reports into structured Excel & Word documents</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           <button
@@ -239,62 +272,96 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Unified Enterprise Processing / Upload Card */}
-      {processingStage === 'idle' && !currentFile ? (
-        <PdfUploader onFileSelected={handleFileUpload} isUploading={isUploading} />
-      ) : (
-        <UploadProgress
-          currentFile={currentFile}
-          isUploading={isUploading}
-          processingStage={processingStage}
-          progressPercent={uploadProgressPercent}
-          processingDetails={processingDetails}
-          onUploadAnother={handleUploadAnother}
-          onReset={handleResetAll}
-        />
-      )}
-
-      {/* Structured Temperature Rise Measurements */}
-      <TemperatureTable
-        metadata={metadata}
-        intervals={intervals}
-        onIntervalsChange={handleIntervalsChange}
-        onResetToOriginal={originalExtraction ? handleResetToOriginal : null}
-        isUploading={isUploading}
-      />
-
-      <ValidationWarning warnings={warnings} />
-
-      <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', backgroundColor: 'var(--bg-card-subtle)', borderColor: 'var(--border-color)' }}>
-        <div>
-          <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-            {isReadyForExport ? 'Ready to Export Excel Workbook' : 'Awaiting Report Extraction'}
-          </h3>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-            Generates calibrated .xlsx with exact 2-tier matrix headers, ΔT rise formulas, noise checks, and compliance status.
-          </p>
+      {/* Modern Status Strip */}
+      <div className="status-strip">
+        <div className="status-item">
+          <span className={`status-indicator ${isServerOnline ? 'online' : 'offline'}`}></span>
+          <span className="status-label">Backend Pipeline:</span>
+          <span className="status-value">{serverStatus}</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          {isReadyForExport && (
+        <div className="status-item">
+          <span className="status-label">Engine:</span>
+          <span className="status-value">Multi-Format OCR Engine + 2-Tier Thermal Matrix</span>
+        </div>
+        <div className="status-item">
+          <span className="status-label">A4 Formats:</span>
+          <span className="status-value">Excel (.xlsx) & Word (.docx)</span>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        {/* Step 1: Upload */}
+        <PdfUploader
+          onFileUpload={handleFileUpload}
+          isUploading={isUploading}
+          currentFileName={currentFile?.name}
+          onUploadAnother={handleUploadAnother}
+        />
+
+        {/* Upload & Extraction Progress */}
+        {isUploading && (
+          <UploadProgress
+            progress={uploadProgressPercent}
+            statusText={processingStage}
+            details={processingDetails}
+          />
+        )}
+
+        {/* Global Error Banner */}
+        {errorMessage && (
+          <div className="card" style={{ borderLeft: '4px solid var(--danger-color)', backgroundColor: 'var(--danger-bg)' }}>
+            <h3 style={{ color: 'var(--danger-text)', margin: '0 0 0.5rem 0' }}>⚠️ System Notice</h3>
+            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{errorMessage}</p>
+          </div>
+        )}
+
+        {/* Step 2: Metadata & Form Controls */}
+        {metadata && (
+          <TestInformation
+            metadata={metadata}
+            onMetadataChange={handleMetadataChange}
+          />
+        )}
+
+        {/* Step 3: Measurement Interval Matrix */}
+        {intervals.length > 0 && (
+          <TemperatureTable
+            metadata={metadata}
+            intervals={intervals}
+            onIntervalsChange={handleIntervalsChange}
+            onResetToOriginal={handleResetToOriginal}
+            isUploading={isUploading}
+          />
+        )}
+
+        {/* Warnings & Engineering Threshold Limits */}
+        {warnings.length > 0 && (
+          <ValidationWarning warnings={warnings} />
+        )}
+
+        {/* Step 4: Actions & Export Footer */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+          {metadata && (
             <button
               type="button"
               className="btn btn-secondary"
               onClick={handleResetAll}
               style={{
-                padding: '0.65rem 1rem',
-                fontSize: '0.9rem',
-                color: 'var(--danger-text)',
-                borderColor: 'var(--border-color)'
+                borderColor: 'var(--danger-color)',
+                color: 'var(--danger-color)',
+                backgroundColor: 'transparent'
               }}
-              title="Reset everything and upload a new report"
+              title="Reset document and all extracted data"
             >
               🔄 Reset All
             </button>
           )}
           <DownloadButton
             onDownload={handleDownloadExcel}
+            onDownloadWord={handleDownloadWord}
             isReady={isReadyForExport}
             isGenerating={isGeneratingExcel}
+            isGeneratingWord={isGeneratingWord}
           />
         </div>
       </div>
