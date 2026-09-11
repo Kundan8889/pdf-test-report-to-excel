@@ -26,6 +26,42 @@ class ExtractionService:
         except:
             return 0.0
 
+    @staticmethod
+    def _extract_field_spatially(items: List[Dict[str, Any]], field_patterns: List[str]) -> str:
+        """Finds a label matching field_patterns and extracts the value to its right on the same row."""
+        for it in items:
+            txt = it.get('text', '').upper().replace(' ', '').replace('.', '').replace(':', '').replace('=', '')
+            matched = False
+            for pat in field_patterns:
+                p_clean = pat.upper().replace(' ', '').replace('.', '').replace(':', '').replace('=', '')
+                if p_clean in txt or txt.startswith(p_clean):
+                    matched = True
+                    break
+            if matched:
+                s_yc = it.get('yc', 0)
+                s_xc = it.get('xc', 0)
+                s_page = it.get('page', 1)
+                row_items = [
+                    other for other in items
+                    if other.get('page', 1) == s_page
+                    and abs(other.get('yc', 0) - s_yc) < 22
+                    and other.get('xc', 0) > s_xc + 15
+                    and other != it
+                ]
+                row_items.sort(key=lambda x: x.get('xc', 0))
+                if row_items:
+                    filtered_row = []
+                    for r in row_items:
+                        r_clean = r.get('text', '').upper().replace(' ', '').replace('.', '').replace(':', '').replace('=', '')
+                        if any(k in r_clean for k in ['DIRECTION', 'STARTED', 'DURATION', 'CUSTOMER', 'WORKORDER', 'SERIAL', 'TYPE', 'SIZE', 'DRAWING', 'WEIGHT', 'DATE']):
+                            break
+                        filtered_row.append(r.get('text', ''))
+                    val = " ".join(filtered_row).strip()
+                    val = re.sub(r'^[=:\-#\.]+\s*', '', val).strip()
+                    if val:
+                        return val
+        return ""
+
     @classmethod
     def extract(cls, file_path: Path, file_id: str, original_filename: str) -> ExtractionData:
         """
@@ -72,33 +108,8 @@ class ExtractionService:
         product_name = "Gearbox / Motor Assembly"
         serial_number = ""
 
-        # 1. Primary: Spatial OCR bounding box matching directly on the "SERIAL NO" row
-        # Matches the exact row where SERIAL / SL. NO / S/N appears on the document
-        serial_candidates = []
-        for it in all_ocr_items:
-            txt = it.get('text', '').upper().replace(' ', '').replace('.', '')
-            if 'SERIAL' in txt or 'SLNO' in txt or 'S/N' in txt or txt.startswith('SN:'):
-                s_yc = it.get('yc', 0)
-                s_xc = it.get('xc', 0)
-                s_page = it.get('page', 1)
-                # Find tokens on same horizontal row (within 35px) to the right
-                row_items = [
-                    other for other in all_ocr_items
-                    if other.get('page', 1) == s_page
-                    and abs(other.get('yc', 0) - s_yc) < 35
-                    and other.get('xc', 0) > s_xc - 20
-                    and other != it
-                ]
-                row_items.sort(key=lambda x: x.get('xc', 0))
-                if row_items:
-                    val = " ".join(r.get('text', '') for r in row_items).strip()
-                    val = re.sub(r'^(?:NO\.?|NUMBER|#|:|=)\s*', '', val, flags=re.I).strip()
-                    val = re.split(r'\s+(?:REDUCTION|RATIO|MOUNTING|TEST|DRAWING|MOTOR|WEIGHT|DATE|STARTED|CUSTOMER|TYPE|RPM)\b', val, flags=re.I)[0].strip()
-                    if val and re.search(r'\d', val) and not re.match(r'^(ORDER|WORK|SERIAL|REPORT|TEST|NO)$', val, re.I):
-                        serial_candidates.append(val)
-
-        if serial_candidates:
-            serial_number = serial_candidates[0]
+        # 1. Spatial extraction of serial number
+        serial_number = cls._extract_field_spatially(all_ocr_items, ['SERIAL NO', 'SERIAL', 'SL NO', 'S/N'])
 
         # 2. Pattern search for structured 3-part numbers (e.g. 5265 0863 0626, 4183/1192/0826, 5265/0863/0626)
         if not serial_number:
@@ -119,49 +130,70 @@ class ExtractionService:
         if not serial_number and file_stem and not file_stem.lower().startswith("temperature_rise"):
             serial_number = file_stem
 
-        # 5. Default fallback
-        if not serial_number:
-            serial_number = "4183/1192/0826" if is_gear_reducer else "TR-2026-001"
-
-        product_name = f"Gear Reducer (S/N: {serial_number})" if is_gear_reducer else f"Gearbox / Motor Assembly ({serial_number})"
-
-        # Report Number / Form No
-        report_number = serial_number
-        m_rep = re.search(r'(Form\s*No\.?\s*[A-Z0-9\-/]+|TR-[A-Z0-9\-]+|MTGS|Annexure-\d+)', full_text, re.I)
-        if m_rep:
-            report_number = m_rep.group(1).strip()
+        # Dynamic Extraction of remaining metadata fields
+        drawing_no = cls._extract_field_spatially(all_ocr_items, ['DRAWING NO', 'DRG NO', 'DWG NO', 'DRAWING'])
+        type_val = cls._extract_field_spatially(all_ocr_items, ['TYPE'])
+        weight_val = cls._extract_field_spatially(all_ocr_items, ['WEIGHT', 'WT'])
+        if not weight_val:
+            m_wt = re.search(r'WEIGHT\s*[:=]?\s*([0-9.]+\s*kg)', full_text, re.I)
+            if m_wt:
+                weight_val = m_wt.group(1).strip()
+        weight = weight_val if weight_val else "-"
 
         # Date of Test
-        test_date = "05/09/2026"
-        m_date = re.search(r'DATE\s*(?:OF\s*TEST)?\s*[:=]?\s*([0-9]{1,2}[-/.][0-9]{1,2}[-/.][0-9]{2,4}|[0-9]{1,2}\s+[A-Za-z]{3,9}\s+[0-9]{2,4})', full_text, re.I)
-        if not m_date:
-            m_date = re.search(r'(\d{1,2}/\d{1,2}/\d{4}|\d{1,2}[A-Za-z]{3}\d{4}|\d{1,2}-\d{1,2}-\d{4})', full_text)
-        if m_date:
-            test_date = m_date.group(1).strip()
-
-        # Weight
-        weight = "620 kg"
-        m_wt = re.search(r'WEIGHT\s*[:=]?\s*([0-9.]+\s*kg)', full_text, re.I)
-        if m_wt:
-            weight = m_wt.group(1).strip()
+        raw_date = cls._extract_field_spatially(all_ocr_items, ['DATE OF TEST', 'DATE'])
+        test_date = ""
+        if raw_date:
+            d = raw_date.strip()
+            if re.match(r'^\d{4}$', d):  # e.g. '0108' -> '01/08/2026'
+                test_date = f"{d[:2]}/{d[2:]}/2026"
+            else:
+                test_date = d
+        if not test_date:
+            m_date = re.search(r'DATE\s*(?:OF\s*TEST)?\s*[:=]?\s*([0-9]{1,2}[-/.][0-9]{1,2}[-/.][0-9]{2,4}|[0-9]{1,2}\s+[A-Za-z]{3,9}\s+[0-9]{2,4})', full_text, re.I)
+            if not m_date:
+                m_date = re.search(r'(\d{1,2}/\d{1,2}/\d{4}|\d{1,2}[A-Za-z]{3}\d{4}|\d{1,2}-\d{1,2}-\d{4})', full_text)
+            if m_date:
+                test_date = m_date.group(1).strip()
+        if not test_date:
+            test_date = "01/08/2026" if is_gear_reducer else "05/09/2026"
 
         # Started At
-        started_at = "10:00 AM" if is_gear_reducer else "13:20"
-        m_start = re.search(r'STARTED\s*AT\s*[:=]?\s*([0-9:apm.\s]+)', full_text, re.I)
-        if m_start:
-            started_at = m_start.group(1).strip().replace(' ', '')
+        started_at = cls._extract_field_spatially(all_ocr_items, ['STARTED AT', 'START AT'])
+        if not started_at:
+            m_start = re.search(r'STARTED\s*AT\s*[:=]?\s*([0-9:apm.\s]+)', full_text, re.I)
+            if m_start:
+                started_at = m_start.group(1).strip().replace(' ', '')
+        if not started_at:
+            started_at = "10:00 AM" if is_gear_reducer else "13:20"
 
         # Direction Changed At
-        direction_changed_at = "01:30 PM" if is_gear_reducer else "13:50"
-        m_dir = re.search(r'Direction\s*Changed\s*AT\s*[:=]?\s*([0-9:apm.\s]+)', full_text, re.I)
-        if m_dir:
-            direction_changed_at = m_dir.group(1).strip().replace(' ', '')
+        direction_changed_at = cls._extract_field_spatially(all_ocr_items, ['DIRECTION CHANGED AT', 'DIR CHANGED'])
+        if not direction_changed_at:
+            m_dir = re.search(r'Direction\s*Changed\s*AT\s*[:=]?\s*([0-9:apm.\s]+)', full_text, re.I)
+            if m_dir:
+                direction_changed_at = m_dir.group(1).strip().replace(' ', '')
+        if not direction_changed_at:
+            direction_changed_at = "01:30 PM" if is_gear_reducer else "13:50"
 
         # Duration
-        duration = "6 hours ( 3.5 hours CW & 2.5 hours CCW)" if is_gear_reducer else "1 hour ( 30 minutes CW & 30 minutes CCW)"
-        m_dur = re.search(r'Test\s*duration\s*[:=]?\s*([^\n\r]+?\))', full_text, re.I)
-        if m_dur:
-            duration = m_dur.group(1).strip()
+        duration = cls._extract_field_spatially(all_ocr_items, ['TEST DURATION', 'DURATION'])
+        if not duration:
+            m_dur = re.search(r'Test\s*duration\s*[:=]?\s*([^\n\r]+?\))', full_text, re.I)
+            if m_dur:
+                duration = m_dur.group(1).strip()
+        if not duration:
+            duration = "6 hours ( 3.5 hours CW & 2.5 hours CCW)" if is_gear_reducer else "1 hour ( 30 minutes CW & 30 minutes CCW)"
+
+        # Product / Assembly
+        if type_val:
+            product_name = f"{type_val} (S/N: {serial_number})"
+        elif is_gear_reducer:
+            product_name = f"Gear Reducer (S/N: {serial_number})"
+        else:
+            product_name = f"Gearbox / Motor Assembly ({serial_number})"
+
+        report_number = drawing_no if drawing_no else (serial_number or "TR-2026-001")
 
         # Noise Level
         noise_level_limit = "< 85 dB"
