@@ -78,3 +78,11 @@ npm run dev
 ```
 
 Frontend will be accessible at: `http://localhost:5173`
+
+cd ~/pdf-test-report-to-excel/frontend
+npm run build
+sudo rsync -av --delete dist/ /var/www/pdf-test-report/
+
+cd ~/pdf-test-report-to-excel/backend
+./venv/bin/python -m compileall app
+sudo systemctl restart pdf-test-report
