@@ -5,7 +5,6 @@ import PdfUploader from '../components/PdfUploader';
 import UploadProgress from '../components/UploadProgress';
 import TemperatureTable from '../components/TemperatureTable';
 import ValidationWarning from '../components/ValidationWarning';
-import TestInformation from '../components/TestInformation';
 import DownloadButton from '../components/DownloadButton';
 import ConfirmModal from '../components/ConfirmModal';
 
@@ -272,20 +271,22 @@ export default function Home() {
       </header>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        {/* Step 1: Upload */}
-        <PdfUploader
-          onFileUpload={handleFileUpload}
-          isUploading={isUploading}
-          currentFileName={currentFile?.name}
-          onUploadAnother={handleUploadAnother}
-        />
-
-        {/* Upload & Extraction Progress */}
-        {isUploading && (
+        {/* Step 1: Upload Intake or Processing Pipeline */}
+        {!currentFile && !isUploading ? (
+          <PdfUploader
+            onFileSelected={handleFileUpload}
+            onFileUpload={handleFileUpload}
+            isUploading={isUploading}
+          />
+        ) : (
           <UploadProgress
-            progress={uploadProgressPercent}
-            statusText={processingStage}
-            details={processingDetails}
+            currentFile={currentFile}
+            isUploading={isUploading}
+            processingStage={processingStage}
+            progressPercent={uploadProgressPercent}
+            processingDetails={processingDetails}
+            onUploadAnother={handleUploadAnother}
+            onReset={handleResetAll}
           />
         )}
 
@@ -297,24 +298,14 @@ export default function Home() {
           </div>
         )}
 
-        {/* Step 2: Metadata & Form Controls */}
-        {metadata && (
-          <TestInformation
-            metadata={metadata}
-            onMetadataChange={handleMetadataChange}
-          />
-        )}
-
-        {/* Step 3: Measurement Interval Matrix */}
-        {intervals.length > 0 && (
-          <TemperatureTable
-            metadata={metadata}
-            intervals={intervals}
-            onIntervalsChange={handleIntervalsChange}
-            onResetToOriginal={handleResetToOriginal}
-            isUploading={isUploading}
-          />
-        )}
+        {/* Step 2: Measurement Interval Matrix */}
+        <TemperatureTable
+          metadata={metadata}
+          intervals={intervals}
+          onIntervalsChange={handleIntervalsChange}
+          onResetToOriginal={originalExtraction ? handleResetToOriginal : null}
+          isUploading={isUploading}
+        />
 
         {/* Warnings & Engineering Threshold Limits */}
         {warnings.length > 0 && (
@@ -322,29 +313,50 @@ export default function Home() {
         )}
 
         {/* Step 4: Actions & Export Footer */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-          {metadata && (
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={handleResetAll}
-              style={{
-                borderColor: 'var(--danger-color)',
-                color: 'var(--danger-color)',
-                backgroundColor: 'transparent'
-              }}
-              title="Reset document and all extracted data"
-            >
-              🔄 Reset All
-            </button>
-          )}
-          <DownloadButton
-            onDownload={handleDownloadExcel}
-            onDownloadWord={handleDownloadWord}
-            isReady={isReadyForExport}
-            isGenerating={isGeneratingExcel}
-            isGeneratingWord={isGeneratingWord}
-          />
+        <div
+          className="card"
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '1rem',
+            backgroundColor: 'var(--bg-card-subtle)',
+            borderColor: 'var(--border-color)'
+          }}
+        >
+          <div>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+              {isReadyForExport ? 'Ready to Export Excel & Word Report' : 'Awaiting Report Extraction'}
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>
+              Generates calibrated .xlsx &amp; .docx with exact 2-tier matrix headers, ΔT rise formulas, noise checks, and compliance status.
+            </p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            {metadata && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleResetAll}
+                style={{
+                  borderColor: 'var(--danger-color)',
+                  color: 'var(--danger-color)',
+                  backgroundColor: 'transparent'
+                }}
+                title="Reset document and all extracted data"
+              >
+                🔄 Reset All
+              </button>
+            )}
+            <DownloadButton
+              onDownload={handleDownloadExcel}
+              onDownloadWord={handleDownloadWord}
+              isReady={isReadyForExport}
+              isGenerating={isGeneratingExcel}
+              isGeneratingWord={isGeneratingWord}
+            />
+          </div>
         </div>
       </div>
 

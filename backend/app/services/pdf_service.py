@@ -49,6 +49,23 @@ class PDFService:
         except Exception as e:
             print(f"pypdf image extraction error: {e}")
 
+        # Fallback: if no embedded images found, rasterize Page 1 via pdfplumber
+        if not images:
+            try:
+                with pdfplumber.open(file_path) as pdf:
+                    if pdf.pages:
+                        p0 = pdf.pages[0]
+                        pil_img = p0.to_image(resolution=150).original
+                        import io
+                        buf = io.BytesIO()
+                        pil_img.save(buf, format="PNG")
+                        class SimpleImg:
+                            def __init__(self, d):
+                                self.data = d
+                        images.append(SimpleImg(buf.getvalue()))
+            except Exception as e:
+                print(f"Fallback page rasterization error: {e}")
+
         combined_text = "\n".join(extracted_text)
         return {
             "text": combined_text,

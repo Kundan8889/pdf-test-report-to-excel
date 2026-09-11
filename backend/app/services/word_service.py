@@ -262,15 +262,15 @@ class WordService:
 
             col_curr = 2
             for act, rise in val_pairs:
-                format_cell(table.cell(current_row_idx, col_curr), f"{act:.1f}", bg_color=r_bg, align=WD_ALIGN_PARAGRAPH.RIGHT, font_size=8.0)
+                format_cell(table.cell(current_row_idx, col_curr), f"{act:.1f}", bg_color=r_bg, align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
                 # Temp rise with subtle red if > 40
                 rise_bg = "FEE2E2" if rise > 40.0 else r_bg
                 rise_color = (0xDC, 0x26, 0x26) if rise > 40.0 else (0x1E, 0x29, 0x3B)
-                format_cell(table.cell(current_row_idx, col_curr + 1), f"{rise:.1f}", color_rgb=rise_color, bg_color=rise_bg, align=WD_ALIGN_PARAGRAPH.RIGHT, font_size=8.0)
+                format_cell(table.cell(current_row_idx, col_curr + 1), f"{rise:.1f}", color_rgb=rise_color, bg_color=rise_bg, align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
                 col_curr += 2
 
             # Ambient
-            format_cell(table.cell(current_row_idx, 20), f"{item.ambient:.1f}", bg_color=r_bg, align=WD_ALIGN_PARAGRAPH.RIGHT, font_size=8.0)
+            format_cell(table.cell(current_row_idx, 20), f"{item.ambient:.1f}", bg_color=r_bg, align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
             current_row_idx += 1
 
         # 7. Lubrication Leakage Footer

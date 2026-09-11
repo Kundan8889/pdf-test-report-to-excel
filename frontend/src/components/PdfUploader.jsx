@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 
-export default function PdfUploader({ onFileSelected, isUploading }) {
+export default function PdfUploader({ onFileSelected, onFileUpload, isUploading }) {
   const [dragOver, setDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
@@ -26,7 +26,9 @@ export default function PdfUploader({ onFileSelected, isUploading }) {
   const handleFileChange = (file) => {
     if (!file) return;
     setSelectedFile(file);
-    if (onFileSelected) {
+    if (onFileUpload) {
+      onFileUpload(file);
+    } else if (onFileSelected) {
       onFileSelected(file);
     }
   };

@@ -208,50 +208,51 @@ class ExcelService:
             c_dir.alignment = ALIGN_CENTER
 
             # Input
-            ws.cell(row=current_row, column=3, value=item.input_actual).alignment = ALIGN_RIGHT
-            ws.cell(row=current_row, column=4, value=item.input_rise).alignment = ALIGN_RIGHT
+            ws.cell(row=current_row, column=3, value=item.input_actual).alignment = ALIGN_CENTER
+            ws.cell(row=current_row, column=4, value=item.input_rise).alignment = ALIGN_CENTER
 
             # Body
-            ws.cell(row=current_row, column=5, value=item.body_actual).alignment = ALIGN_RIGHT
-            ws.cell(row=current_row, column=6, value=item.body_rise).alignment = ALIGN_RIGHT
+            ws.cell(row=current_row, column=5, value=item.body_actual).alignment = ALIGN_CENTER
+            ws.cell(row=current_row, column=6, value=item.body_rise).alignment = ALIGN_CENTER
 
             # Body 2
             body2_act = getattr(item, 'body2_actual', item.body_actual)
             body2_r = getattr(item, 'body2_rise', item.body_rise)
-            ws.cell(row=current_row, column=7, value=body2_act).alignment = ALIGN_RIGHT
-            ws.cell(row=current_row, column=8, value=body2_r).alignment = ALIGN_RIGHT
+            ws.cell(row=current_row, column=7, value=body2_act).alignment = ALIGN_CENTER
+            ws.cell(row=current_row, column=8, value=body2_r).alignment = ALIGN_CENTER
 
             # Bearing 1
-            ws.cell(row=current_row, column=9, value=item.bc1_actual).alignment = ALIGN_RIGHT
-            ws.cell(row=current_row, column=10, value=item.bc1_rise).alignment = ALIGN_RIGHT
+            ws.cell(row=current_row, column=9, value=item.bc1_actual).alignment = ALIGN_CENTER
+            ws.cell(row=current_row, column=10, value=item.bc1_rise).alignment = ALIGN_CENTER
 
             # Bearing 2
-            ws.cell(row=current_row, column=11, value=item.bc2_actual).alignment = ALIGN_RIGHT
-            ws.cell(row=current_row, column=12, value=item.bc2_rise).alignment = ALIGN_RIGHT
+            ws.cell(row=current_row, column=11, value=item.bc2_actual).alignment = ALIGN_CENTER
+            ws.cell(row=current_row, column=12, value=item.bc2_rise).alignment = ALIGN_CENTER
 
             # Bearing 3
-            ws.cell(row=current_row, column=13, value=item.bc3_actual).alignment = ALIGN_RIGHT
-            ws.cell(row=current_row, column=14, value=item.bc3_rise).alignment = ALIGN_RIGHT
+            ws.cell(row=current_row, column=13, value=item.bc3_actual).alignment = ALIGN_CENTER
+            ws.cell(row=current_row, column=14, value=item.bc3_rise).alignment = ALIGN_CENTER
 
             # Bearing 4
-            ws.cell(row=current_row, column=15, value=item.bc4_actual).alignment = ALIGN_RIGHT
-            ws.cell(row=current_row, column=16, value=item.bc4_rise).alignment = ALIGN_RIGHT
+            ws.cell(row=current_row, column=15, value=item.bc4_actual).alignment = ALIGN_CENTER
+            ws.cell(row=current_row, column=16, value=item.bc4_rise).alignment = ALIGN_CENTER
 
             # Bearing 5
-            ws.cell(row=current_row, column=17, value=item.bc5_actual).alignment = ALIGN_RIGHT
-            ws.cell(row=current_row, column=18, value=item.bc5_rise).alignment = ALIGN_RIGHT
+            ws.cell(row=current_row, column=17, value=item.bc5_actual).alignment = ALIGN_CENTER
+            ws.cell(row=current_row, column=18, value=item.bc5_rise).alignment = ALIGN_CENTER
 
             # Output
-            ws.cell(row=current_row, column=19, value=item.output_actual).alignment = ALIGN_RIGHT
-            ws.cell(row=current_row, column=20, value=item.output_rise).alignment = ALIGN_RIGHT
+            ws.cell(row=current_row, column=19, value=item.output_actual).alignment = ALIGN_CENTER
+            ws.cell(row=current_row, column=20, value=item.output_rise).alignment = ALIGN_CENTER
 
             # Ambient
-            ws.cell(row=current_row, column=21, value=item.ambient).alignment = ALIGN_RIGHT
+            ws.cell(row=current_row, column=21, value=item.ambient).alignment = ALIGN_CENTER
 
             for c in range(1, 22):
                 cell = ws.cell(row=current_row, column=c)
                 cell.border = BORDER_ALL
                 cell.font = FONT_REGULAR if c not in [1, 2] else FONT_BOLD
+                cell.alignment = ALIGN_CENTER
                 if r_fill.fill_type:
                     cell.fill = r_fill
                 if c >= 3:
@@ -287,12 +288,12 @@ class ExcelService:
             ws.cell(row=current_row, column=c).border = BORDER_ALL
 
         # Compact Column Widths optimized for A4 Landscape
-        ws.column_dimensions["A"].width = 10.5  # Time
-        ws.column_dimensions["B"].width = 9.0   # Direction (CW / CCW)
+        ws.column_dimensions["A"].width = 10.0  # Time
+        ws.column_dimensions["B"].width = 8.5   # Direction (CW / CCW)
         for col_idx in range(3, 21):
             col_letter = get_column_letter(col_idx)
-            ws.column_dimensions[col_letter].width = 7.5  # Actual Temp / Temp Rise
-        ws.column_dimensions["U"].width = 8.5   # Ambient
+            ws.column_dimensions[col_letter].width = 6.4  # Actual Temp / Temp Rise
+        ws.column_dimensions["U"].width = 8.0   # Ambient
 
         # A4 Landscape Print Setup to guarantee 1-page width fitting
         ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
