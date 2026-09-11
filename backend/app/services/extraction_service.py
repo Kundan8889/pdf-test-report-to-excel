@@ -196,21 +196,21 @@ class ExtractionService:
         intervals: List[TimeIntervalReading] = []
 
         if is_gear_reducer:
-            # Complete 13-row test sequence from 10:00 AM to 04:00 PM in 30-min intervals
+            # Complete 13-row test sequence from 10:00 AM to 04:00 PM in 30-min intervals (Direction strictly CW / CCW)
             gear_reducer_13_rows = [
-                ("10:00 AM", "Start (CW)", 25.0, 26.4, 25.2, 25.8),
+                ("10:00 AM", "CW", 25.0, 26.4, 25.2, 25.8),
                 ("10:30 AM", "CW", 25.0, 35.0, 35.5, 36.2),
                 ("11:00 AM", "CW", 26.0, 36.2, 38.3, 38.2),
                 ("11:30 AM", "CW", 26.0, 39.3, 42.8, 40.1),
                 ("12:00 PM", "CW", 26.0, 41.5, 44.0, 42.7),
                 ("12:30 PM", "CW", 27.0, 42.9, 44.2, 43.4),
                 ("01:00 PM", "CW", 27.0, 43.6, 45.7, 44.6),
-                ("01:30 PM", "Direction Change (CCW)", 27.0, 43.2, 46.1, 44.8),
+                ("01:30 PM", "CCW", 27.0, 43.2, 46.1, 44.8),
                 ("02:00 PM", "CCW", 27.0, 44.2, 46.3, 45.9),
                 ("02:30 PM", "CCW", 27.0, 45.1, 46.7, 45.4),
                 ("03:00 PM", "CCW", 28.0, 46.0, 46.8, 46.6),
                 ("03:30 PM", "CCW", 28.0, 46.1, 46.6, 46.1),
-                ("04:00 PM", "Final (CCW)", 28.0, 46.8, 47.1, 46.2)
+                ("04:00 PM", "CCW", 28.0, 46.8, 47.1, 46.2)
             ]
 
             for time_str, dir_str, amb, inp, b1, out in gear_reducer_13_rows:
@@ -303,17 +303,14 @@ class ExtractionService:
                     if not time_token:
                         time_token = f"Interval {len(intervals)+1}"
 
-                    # Determine time and direction separately
+                    # Determine time and direction separately (strictly CW or CCW)
                     time_val = time_token
-                    dir_val = dir_token or "CW"
-                    if len(intervals) == 0:
-                        dir_val = "Start (CW)"
-                    elif len(intervals) == 1:
-                        dir_val = "Direction Change (CW)" if not dir_token else dir_token
-                    elif len(intervals) == 2:
-                        dir_val = "Final (CCW 1 hr)" if not dir_token else dir_token
-                    elif not dir_token:
-                        dir_val = f"Stage {len(intervals)+1}"
+                    if 'CCW' in dir_token.upper():
+                        dir_val = "CCW"
+                    elif 'CW' in dir_token.upper():
+                        dir_val = "CW"
+                    else:
+                        dir_val = "CW" if len(intervals) < 7 else "CCW"
 
                     nums.sort(key=lambda x: x[0])
                     num_vals = [v for _, v in nums]
@@ -366,7 +363,7 @@ class ExtractionService:
             intervals = [
                 TimeIntervalReading(
                     time_label="13:20",
-                    direction="Start (CW)",
+                    direction="CW",
                     ambient=28.0,
                     input_actual=27.5,
                     input_rise=-0.5,
@@ -389,7 +386,7 @@ class ExtractionService:
                 ),
                 TimeIntervalReading(
                     time_label="13:50",
-                    direction="Direction Change (CW)",
+                    direction="CW",
                     ambient=29.0,
                     input_actual=34.6,
                     input_rise=5.6,
@@ -412,7 +409,7 @@ class ExtractionService:
                 ),
                 TimeIntervalReading(
                     time_label="14:20",
-                    direction="Final (CCW 1 hr)",
+                    direction="CCW",
                     ambient=29.0,
                     input_actual=35.7,
                     input_rise=6.7,

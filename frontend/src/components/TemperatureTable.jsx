@@ -344,12 +344,12 @@ export default function TemperatureTable({
                 style={{
                   border: "1px solid var(--table-border)",
                   padding: "0.5rem",
-                  minWidth: "220px",
-                  width: "220px",
+                  minWidth: "90px",
+                  width: "90px",
                   whiteSpace: "nowrap",
                 }}
               >
-                Direction / Stage
+                Direction
               </th>
               <th
                 colSpan="2"
@@ -550,14 +550,14 @@ export default function TemperatureTable({
                   />
                 </td>
 
-                {/* Column 2: Direction / Stage */}
+                {/* Column 2: Direction */}
                 <td
                   style={{
                     border: "1px solid var(--table-inner-border)",
-                    padding: "0.35rem 0.5rem",
-                    minWidth: "220px",
-                    width: "220px",
-                    textAlign: "left",
+                    padding: "0.35rem 0.3rem",
+                    minWidth: "90px",
+                    width: "90px",
+                    textAlign: "center",
                     whiteSpace: "nowrap",
                   }}
                 >
@@ -565,7 +565,7 @@ export default function TemperatureTable({
                     type="text"
                     value={row.direction || ''}
                     title={row.direction}
-                    placeholder="CW / CCW"
+                    placeholder="CW"
                     onChange={(e) => {
                       const updated = [...intervals];
                       updated[rIdx] = {
@@ -576,14 +576,13 @@ export default function TemperatureTable({
                     }}
                     style={{
                       width: "100%",
-                      minWidth: "200px",
-                      textAlign: "left",
+                      textAlign: "center",
                       border: "1px solid transparent",
                       borderRadius: "0.25rem",
-                      padding: "0.2rem 0.4rem",
+                      padding: "0.2rem 0.3rem",
                       color: "var(--text-primary)",
                       backgroundColor: "transparent",
-                      fontWeight: 600,
+                      fontWeight: 700,
                       fontSize: "0.85rem",
                     }}
                   />
