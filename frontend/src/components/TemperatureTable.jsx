@@ -314,8 +314,8 @@ export default function TemperatureTable({
                 style={{
                   border: "1px solid var(--table-border)",
                   padding: "0.5rem",
-                  minWidth: "110px",
-                  width: "110px",
+                  minWidth: "115px",
+                  width: "115px",
                   whiteSpace: "nowrap",
                 }}
               >
@@ -326,8 +326,8 @@ export default function TemperatureTable({
                 style={{
                   border: "1px solid var(--table-border)",
                   padding: "0.5rem",
-                  minWidth: "140px",
-                  width: "140px",
+                  minWidth: "220px",
+                  width: "220px",
                   whiteSpace: "nowrap",
                 }}
               >
@@ -338,7 +338,7 @@ export default function TemperatureTable({
                 style={{
                   border: "1px solid var(--table-border)",
                   padding: "0.4rem",
-                  minWidth: "130px",
+                  minWidth: "140px",
                 }}
               >
                 input
@@ -348,7 +348,7 @@ export default function TemperatureTable({
                 style={{
                   border: "1px solid var(--table-border)",
                   padding: "0.4rem",
-                  minWidth: "130px",
+                  minWidth: "140px",
                 }}
               >
                 body
@@ -358,7 +358,7 @@ export default function TemperatureTable({
                 style={{
                   border: "1px solid var(--table-border)",
                   padding: "0.4rem",
-                  minWidth: "130px",
+                  minWidth: "140px",
                 }}
               >
                 body
@@ -368,7 +368,7 @@ export default function TemperatureTable({
                 style={{
                   border: "1px solid var(--table-border)",
                   padding: "0.4rem",
-                  minWidth: "130px",
+                  minWidth: "140px",
                 }}
               >
                 Bearing cover 1
@@ -378,7 +378,7 @@ export default function TemperatureTable({
                 style={{
                   border: "1px solid var(--table-border)",
                   padding: "0.4rem",
-                  minWidth: "130px",
+                  minWidth: "140px",
                 }}
               >
                 Bearing Cover 2
@@ -388,7 +388,7 @@ export default function TemperatureTable({
                 style={{
                   border: "1px solid var(--table-border)",
                   padding: "0.4rem",
-                  minWidth: "130px",
+                  minWidth: "140px",
                 }}
               >
                 Bearing Cover 3
@@ -398,7 +398,7 @@ export default function TemperatureTable({
                 style={{
                   border: "1px solid var(--table-border)",
                   padding: "0.4rem",
-                  minWidth: "130px",
+                  minWidth: "140px",
                 }}
               >
                 Bearing Cover 4
@@ -408,7 +408,7 @@ export default function TemperatureTable({
                 style={{
                   border: "1px solid var(--table-border)",
                   padding: "0.4rem",
-                  minWidth: "130px",
+                  minWidth: "140px",
                 }}
               >
                 Bearing Cover 5
@@ -418,7 +418,7 @@ export default function TemperatureTable({
                 style={{
                   border: "1px solid var(--table-border)",
                   padding: "0.4rem",
-                  minWidth: "130px",
+                  minWidth: "140px",
                 }}
               >
                 output
@@ -460,8 +460,8 @@ export default function TemperatureTable({
                     style={{
                       border: "1px solid var(--table-inner-border)",
                       padding: "0.35rem 0.2rem",
-                      minWidth: "65px",
-                      width: "65px",
+                      minWidth: "70px",
+                      width: "70px",
                     }}
                   >
                     Actual Temp
@@ -470,8 +470,8 @@ export default function TemperatureTable({
                     style={{
                       border: "1px solid var(--table-inner-border)",
                       padding: "0.35rem 0.2rem",
-                      minWidth: "65px",
-                      width: "65px",
+                      minWidth: "70px",
+                      width: "70px",
                       backgroundColor: "var(--table-rise-bg)",
                       color: "var(--table-rise-text)",
                     }}
@@ -499,9 +499,10 @@ export default function TemperatureTable({
                   style={{
                     border: "1px solid var(--table-inner-border)",
                     padding: "0.35rem 0.4rem",
-                    minWidth: "110px",
-                    width: "110px",
+                    minWidth: "115px",
+                    width: "115px",
                     textAlign: "center",
+                    whiteSpace: "nowrap",
                   }}
                 >
                   <input
@@ -535,10 +536,11 @@ export default function TemperatureTable({
                 <td
                   style={{
                     border: "1px solid var(--table-inner-border)",
-                    padding: "0.35rem 0.4rem",
-                    minWidth: "140px",
-                    width: "140px",
+                    padding: "0.35rem 0.5rem",
+                    minWidth: "220px",
+                    width: "220px",
                     textAlign: "left",
+                    whiteSpace: "nowrap",
                   }}
                 >
                   <input
@@ -556,14 +558,15 @@ export default function TemperatureTable({
                     }}
                     style={{
                       width: "100%",
+                      minWidth: "200px",
                       textAlign: "left",
                       border: "1px solid transparent",
                       borderRadius: "0.25rem",
-                      padding: "0.2rem 0.3rem",
+                      padding: "0.2rem 0.4rem",
                       color: "var(--text-primary)",
                       backgroundColor: "transparent",
-                      fontWeight: 500,
-                      fontSize: "0.825rem",
+                      fontWeight: 600,
+                      fontSize: "0.85rem",
                     }}
                   />
                 </td>
