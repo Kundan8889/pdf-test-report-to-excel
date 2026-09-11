@@ -183,6 +183,7 @@ export default function TemperatureTable({
     const amb = lastRow ? lastRow.ambient : 28.0;
     const nextRow = {
       time_label: `Interval ${intervals.length + 1}`,
+      direction: 'CW',
       ambient: amb,
       input_actual: lastRow ? lastRow.input_actual : 28.0,
       input_rise: 0.0,
@@ -313,12 +314,24 @@ export default function TemperatureTable({
                 style={{
                   border: "1px solid var(--table-border)",
                   padding: "0.5rem",
-                  minWidth: "240px",
-                  width: "240px",
+                  minWidth: "110px",
+                  width: "110px",
                   whiteSpace: "nowrap",
                 }}
               >
-                Interval
+                Time
+              </th>
+              <th
+                rowSpan="2"
+                style={{
+                  border: "1px solid var(--table-border)",
+                  padding: "0.5rem",
+                  minWidth: "140px",
+                  width: "140px",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Direction / Stage
               </th>
               <th
                 colSpan="2"
@@ -481,20 +494,21 @@ export default function TemperatureTable({
                   color: "var(--text-primary)",
                 }}
               >
+                {/* Column 1: Time */}
                 <td
                   style={{
                     border: "1px solid var(--table-inner-border)",
-                    padding: "0.35rem 0.5rem",
-                    minWidth: "240px",
-                    width: "240px",
-                    textAlign: "left",
-                    whiteSpace: "nowrap",
+                    padding: "0.35rem 0.4rem",
+                    minWidth: "110px",
+                    width: "110px",
+                    textAlign: "center",
                   }}
                 >
                   <input
                     type="text"
-                    value={row.time_label}
+                    value={row.time_label || ''}
                     title={row.time_label}
+                    placeholder="10:00 AM"
                     onChange={(e) => {
                       const updated = [...intervals];
                       updated[rIdx] = {
@@ -505,14 +519,51 @@ export default function TemperatureTable({
                     }}
                     style={{
                       width: "100%",
-                      minWidth: "220px",
+                      textAlign: "center",
                       border: "1px solid transparent",
                       borderRadius: "0.25rem",
-                      padding: "0.2rem 0.35rem",
+                      padding: "0.2rem 0.3rem",
                       color: "var(--text-primary)",
                       backgroundColor: "transparent",
-                      fontWeight: 600,
+                      fontWeight: 700,
                       fontSize: "0.85rem",
+                    }}
+                  />
+                </td>
+
+                {/* Column 2: Direction / Stage */}
+                <td
+                  style={{
+                    border: "1px solid var(--table-inner-border)",
+                    padding: "0.35rem 0.4rem",
+                    minWidth: "140px",
+                    width: "140px",
+                    textAlign: "left",
+                  }}
+                >
+                  <input
+                    type="text"
+                    value={row.direction || ''}
+                    title={row.direction}
+                    placeholder="CW / CCW"
+                    onChange={(e) => {
+                      const updated = [...intervals];
+                      updated[rIdx] = {
+                        ...updated[rIdx],
+                        direction: e.target.value,
+                      };
+                      onIntervalsChange(updated);
+                    }}
+                    style={{
+                      width: "100%",
+                      textAlign: "left",
+                      border: "1px solid transparent",
+                      borderRadius: "0.25rem",
+                      padding: "0.2rem 0.3rem",
+                      color: "var(--text-primary)",
+                      backgroundColor: "transparent",
+                      fontWeight: 500,
+                      fontSize: "0.825rem",
                     }}
                   />
                 </td>
@@ -947,6 +998,7 @@ export default function TemperatureTable({
               }}
             >
               <td
+                colSpan="2"
                 style={{
                   border: "1px solid var(--table-inner-border)",
                   padding: "0.45rem",
@@ -958,7 +1010,7 @@ export default function TemperatureTable({
                 Lubrication leakage
               </td>
               <td
-                colSpan="9"
+                colSpan="10"
                 style={{
                   border: "1px solid var(--table-inner-border)",
                   padding: "0.45rem",
@@ -969,7 +1021,7 @@ export default function TemperatureTable({
                 {metadata?.lubrication_leakage || "No leakage"}
               </td>
               <td
-                colSpan="11"
+                colSpan="10"
                 style={{
                   border: "1px solid var(--table-inner-border)",
                   padding: "0.45rem",

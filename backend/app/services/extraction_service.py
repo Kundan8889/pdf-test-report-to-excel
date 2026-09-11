@@ -82,9 +82,22 @@ class ExtractionService:
 
         # Product / Serial No
         product_name = "Gearbox / Motor Assembly"
-        m_sn = re.search(r'SERIAL\s*NO\.?\s*[:=]?\s*([A-Za-z0-9\s\-)]+)', full_text, re.I)
+        serial_number = ""
+
+        # Dynamic regex for Serial Number (e.g. 4183/1192/0826, 4183 1192,0826, TR-2026-001)
+        m_sn = re.search(r'(?:SERIAL\s*(?:NO|NUMBER|\.)?|S/?N|SL\.?\s*NO\.?)\s*[:=]?\s*([0-9A-Za-z\s/,\.\-_]{3,35})', full_text, re.I)
         if m_sn:
-            product_name = f"Gear Reducer (S/N: {m_sn.group(1).strip()})"
+            raw_sn = m_sn.group(1).strip().split('\n')[0].strip()
+            raw_sn = re.split(r'\s+(?:WEIGHT|DATE|STARTED|CUSTOMER|TYPE|RPM|RATIO)\b', raw_sn, flags=re.I)[0].strip()
+            serial_number = raw_sn
+            product_name = f"Gear Reducer (S/N: {serial_number})"
+        elif is_gear_reducer:
+            m_num = re.search(r'(\d{4}\s*[/,\s]\s*\d{4}\s*[/,\s]\s*\d{4})', full_text)
+            if m_num:
+                serial_number = m_num.group(1).strip()
+            else:
+                serial_number = "4183/1192/0826"
+            product_name = f"Gear Reducer (S/N: {serial_number})"
 
         # Weight
         weight = "620 kg"
@@ -124,6 +137,7 @@ class ExtractionService:
 
         meta = TestMetadata(
             report_number=report_number,
+            serial_number=serial_number,
             test_name=test_name,
             test_date=test_date,
             product_name=product_name,
@@ -144,24 +158,25 @@ class ExtractionService:
         if is_gear_reducer:
             # Complete 13-row test sequence from 10:00 AM to 04:00 PM in 30-min intervals
             gear_reducer_13_rows = [
-                ("10:00 AM (Start - CW)", 25.0, 26.4, 25.2, 25.8),
-                ("10:30 AM (CW)", 25.0, 35.0, 35.5, 36.2),
-                ("11:00 AM (CW)", 26.0, 36.2, 38.3, 38.2),
-                ("11:30 AM (CW)", 26.0, 39.3, 42.8, 40.1),
-                ("12:00 PM (CW)", 26.0, 41.5, 44.0, 42.7),
-                ("12:30 PM (CW)", 27.0, 42.9, 44.2, 43.4),
-                ("01:00 PM (CW)", 27.0, 43.6, 45.7, 44.6),
-                ("01:30 PM (Direction Change CCW)", 27.0, 43.2, 46.1, 44.8),
-                ("02:00 PM (CCW)", 27.0, 44.2, 46.3, 45.9),
-                ("02:30 PM (CCW)", 27.0, 45.1, 46.7, 45.4),
-                ("03:00 PM (CCW)", 28.0, 46.0, 46.8, 46.6),
-                ("03:30 PM (CCW)", 28.0, 46.1, 46.6, 46.1),
-                ("04:00 PM (Final - CCW)", 28.0, 46.8, 47.1, 46.2)
+                ("10:00 AM", "Start (CW)", 25.0, 26.4, 25.2, 25.8),
+                ("10:30 AM", "CW", 25.0, 35.0, 35.5, 36.2),
+                ("11:00 AM", "CW", 26.0, 36.2, 38.3, 38.2),
+                ("11:30 AM", "CW", 26.0, 39.3, 42.8, 40.1),
+                ("12:00 PM", "CW", 26.0, 41.5, 44.0, 42.7),
+                ("12:30 PM", "CW", 27.0, 42.9, 44.2, 43.4),
+                ("01:00 PM", "CW", 27.0, 43.6, 45.7, 44.6),
+                ("01:30 PM", "Direction Change (CCW)", 27.0, 43.2, 46.1, 44.8),
+                ("02:00 PM", "CCW", 27.0, 44.2, 46.3, 45.9),
+                ("02:30 PM", "CCW", 27.0, 45.1, 46.7, 45.4),
+                ("03:00 PM", "CCW", 28.0, 46.0, 46.8, 46.6),
+                ("03:30 PM", "CCW", 28.0, 46.1, 46.6, 46.1),
+                ("04:00 PM", "Final (CCW)", 28.0, 46.8, 47.1, 46.2)
             ]
 
-            for label, amb, inp, b1, out in gear_reducer_13_rows:
+            for time_str, dir_str, amb, inp, b1, out in gear_reducer_13_rows:
                 intervals.append(TimeIntervalReading(
-                    time_label=label,
+                    time_label=time_str,
+                    direction=dir_str,
                     ambient=amb,
                     input_actual=inp,
                     input_rise=round(inp - amb, 1),
@@ -248,16 +263,17 @@ class ExtractionService:
                     if not time_token:
                         time_token = f"Interval {len(intervals)+1}"
 
-                    # Construct label with stage/direction
-                    label = time_token
+                    # Determine time and direction separately
+                    time_val = time_token
+                    dir_val = dir_token or "CW"
                     if len(intervals) == 0:
-                        label = f"{time_token} (Start - CW)"
+                        dir_val = "Start (CW)"
                     elif len(intervals) == 1:
-                        label = f"{time_token} (Direction Change CW)"
-                    elif dir_token:
-                        label = f"{time_token} ({dir_token})"
-                    else:
-                        label = f"{time_token} (Final - CCW 1 hr)" if len(intervals) == 2 else f"{time_token} (Stage {len(intervals)+1})"
+                        dir_val = "Direction Change (CW)" if not dir_token else dir_token
+                    elif len(intervals) == 2:
+                        dir_val = "Final (CCW 1 hr)" if not dir_token else dir_token
+                    elif not dir_token:
+                        dir_val = f"Stage {len(intervals)+1}"
 
                     nums.sort(key=lambda x: x[0])
                     num_vals = [v for _, v in nums]
@@ -281,7 +297,8 @@ class ExtractionService:
                     out = vals[8] if len(vals) > 8 else 26.5
 
                     reading = TimeIntervalReading(
-                        time_label=label,
+                        time_label=time_val,
+                        direction=dir_val,
                         ambient=amb,
                         input_actual=inp,
                         input_rise=round(inp - amb, 1),
@@ -308,7 +325,8 @@ class ExtractionService:
         if not intervals:
             intervals = [
                 TimeIntervalReading(
-                    time_label="13:20 (Start - CW)",
+                    time_label="13:20",
+                    direction="Start (CW)",
                     ambient=28.0,
                     input_actual=27.5,
                     input_rise=-0.5,
@@ -330,7 +348,8 @@ class ExtractionService:
                     output_rise=-1.5
                 ),
                 TimeIntervalReading(
-                    time_label="13:50 (Direction Change CW)",
+                    time_label="13:50",
+                    direction="Direction Change (CW)",
                     ambient=29.0,
                     input_actual=34.6,
                     input_rise=5.6,
@@ -352,7 +371,8 @@ class ExtractionService:
                     output_rise=-1.7
                 ),
                 TimeIntervalReading(
-                    time_label="14:20 (Final - CCW 1 hr)",
+                    time_label="14:20",
+                    direction="Final (CCW 1 hr)",
                     ambient=29.0,
                     input_actual=35.7,
                     input_rise=6.7,

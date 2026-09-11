@@ -43,6 +43,19 @@ export default function TestInformation({ metadata, onMetadataChange }) {
 
         <div>
           <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.2rem' }}>
+            Serial No. / S/N
+          </label>
+          <input
+            type="text"
+            placeholder="e.g. 4183/1192/0826"
+            value={metadata.serial_number || ''}
+            onChange={(e) => handleChange('serial_number', e.target.value)}
+            style={{ width: '100%', padding: '0.4rem 0.5rem', borderRadius: '0.25rem', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: 600 }}
+          />
+        </div>
+
+        <div>
+          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.2rem' }}>
             Date of Test
           </label>
           <input

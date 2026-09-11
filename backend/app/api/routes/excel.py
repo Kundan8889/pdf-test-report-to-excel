@@ -16,11 +16,13 @@ async def generate_excel(payload: GenerateExcelRequest):
     try:
         file_id = generate_file_id()
         base_name = payload.file_name or "Temperature_Rise_Test_Report.xlsx"
-        clean_name = re.sub(r'[^A-Za-z0-9_\-\.]', '_', base_name)
-        if not clean_name.endswith(".xlsx"):
+        # Sanitize unsafe characters while keeping spaces, hyphens, and dots
+        clean_name = re.sub(r'[\\/*?:"<>|]', '_', base_name).strip()
+        if not clean_name.lower().endswith(".xlsx"):
             clean_name += ".xlsx"
 
-        output_filename = f"{file_id}_{clean_name}"
+        # Use triple-underscore separator to cleanly isolate UUID from dynamic filename
+        output_filename = f"{file_id}___{clean_name}"
         ExcelService.generate_excel(
             metadata=payload.metadata,
             intervals=payload.intervals,
@@ -45,7 +47,7 @@ async def generate_excel(payload: GenerateExcelRequest):
 @router.get("/download/{file_id}")
 async def download_file(file_id: str):
     """
-    Streams the generated .xlsx workbook directly.
+    Streams the generated .xlsx workbook directly with its clean dynamic filename.
     """
     safe_name = Path(file_id).name
     file_path = OUTPUT_DIR / safe_name
@@ -56,7 +58,12 @@ async def download_file(file_id: str):
             detail="The requested Excel file was not found or has expired."
         )
 
-    display_name = safe_name.split("_", 1)[-1] if "_" in safe_name else safe_name
+    if "___" in safe_name:
+        display_name = safe_name.split("___", 1)[1]
+    elif "_" in safe_name:
+        display_name = safe_name.split("_", 1)[1]
+    else:
+        display_name = safe_name
 
     return FileResponse(
         path=file_path,

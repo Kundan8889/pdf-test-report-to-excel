@@ -2,7 +2,8 @@ from typing import Any, List, Optional, Dict
 from pydantic import BaseModel, Field
 
 class TimeIntervalReading(BaseModel):
-    time_label: str = Field(..., description="e.g. 13:20 (0 min), 13:50 (30 min CW), 14:20 (1 hr CCW)")
+    time_label: str = Field(..., description="e.g. 10:00 AM, 13:20")
+    direction: Optional[str] = Field("CW", description="Direction / Stage, e.g. Start (CW), CW, CCW, Direction Change (CCW), Final (CCW)")
     ambient: float = Field(28.0, description="Ambient temperature in °C")
     input_actual: float = Field(27.5, description="Input Actual Temp")
     input_rise: float = Field(-0.5, description="Input Temp Rise")
@@ -25,6 +26,7 @@ class TimeIntervalReading(BaseModel):
 
 class TestMetadata(BaseModel):
     report_number: str = Field("TR-2026-001", description="Test Report Reference Number")
+    serial_number: Optional[str] = Field("", description="Product Serial Number e.g. 4183/1192/0826")
     test_name: str = Field("GEARBOX / MOTOR TEMPERATURE RISE TEST REPORT", description="Test Name")
     test_date: str = Field("05/09/2026", description="Date of test execution")
     product_name: str = Field("Gearbox / Motor Assembly", description="Product description")

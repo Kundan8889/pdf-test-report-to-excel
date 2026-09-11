@@ -160,7 +160,11 @@ export default function Home() {
 
     setIsGeneratingExcel(true);
     try {
-      const fileName = `${metadata.report_number || 'Temperature_Rise_Test_Report'}.xlsx`;
+      // Dynamic filename based on Serial No. (e.g. 4183_1192_0826.xlsx) or Report No.
+      const rawIdent = (metadata.serial_number || metadata.report_number || 'Temperature_Rise_Test_Report').trim();
+      const sanitizedName = rawIdent.replace(/[\/\\?%*:|"<>]/g, '_').trim();
+      const fileName = `${sanitizedName}.xlsx`;
+
       const res = await api.generateExcel(metadata, intervals, fileName);
 
       if (res.success && res.data?.download_url) {
