@@ -33,6 +33,7 @@ export default function Home() {
   const [uploadProgressPercent, setUploadProgressPercent] = useState(0);
   const [processingDetails, setProcessingDetails] = useState(null);
   const [extractionResult, setExtractionResult] = useState(null);
+  const [originalExtraction, setOriginalExtraction] = useState(null);
   const [metadata, setMetadata] = useState(null);
   const [intervals, setIntervals] = useState([]);
   const [warnings, setWarnings] = useState([]);
@@ -105,6 +106,7 @@ export default function Home() {
           technicalStatus: 'Ready for Excel generation • Complies with test limits'
         });
         setExtractionResult(data);
+        setOriginalExtraction(JSON.parse(JSON.stringify(data)));
         setMetadata(data.metadata || null);
         setIntervals(data.intervals || []);
         setWarnings(data.warnings || []);
@@ -138,10 +140,25 @@ export default function Home() {
     setUploadProgressPercent(0);
     setProcessingDetails(null);
     setExtractionResult(null);
+    setOriginalExtraction(null);
     setMetadata(null);
     setIntervals([]);
     setWarnings([]);
     setErrorMessage('');
+  };
+
+  const handleResetAll = () => {
+    if (window.confirm('Are you sure you want to reset and clear all data?')) {
+      handleUploadAnother();
+    }
+  };
+
+  const handleResetToOriginal = () => {
+    if (originalExtraction) {
+      setMetadata(JSON.parse(JSON.stringify(originalExtraction.metadata || null)));
+      setIntervals(JSON.parse(JSON.stringify(originalExtraction.intervals || [])));
+      setWarnings(JSON.parse(JSON.stringify(originalExtraction.warnings || [])));
+    }
   };
 
   const handleMetadataChange = (updatedMetadata) => {
@@ -228,6 +245,7 @@ export default function Home() {
           progressPercent={uploadProgressPercent}
           processingDetails={processingDetails}
           onUploadAnother={handleUploadAnother}
+          onReset={handleResetAll}
         />
       )}
 
@@ -236,6 +254,7 @@ export default function Home() {
         metadata={metadata}
         intervals={intervals}
         onIntervalsChange={handleIntervalsChange}
+        onResetToOriginal={originalExtraction ? handleResetToOriginal : null}
         isUploading={isUploading}
       />
 
@@ -250,11 +269,29 @@ export default function Home() {
             Generates calibrated .xlsx with exact 2-tier matrix headers, ΔT rise formulas, noise checks, and compliance status.
           </p>
         </div>
-        <DownloadButton
-          onDownload={handleDownloadExcel}
-          isReady={isReadyForExport}
-          isGenerating={isGeneratingExcel}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {isReadyForExport && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={handleResetAll}
+              style={{
+                padding: '0.65rem 1rem',
+                fontSize: '0.9rem',
+                color: 'var(--danger-text)',
+                borderColor: 'var(--border-color)'
+              }}
+              title="Reset everything and upload a new report"
+            >
+              🔄 Reset All
+            </button>
+          )}
+          <DownloadButton
+            onDownload={handleDownloadExcel}
+            isReady={isReadyForExport}
+            isGenerating={isGeneratingExcel}
+          />
+        </div>
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ export default function TemperatureTable({
   metadata,
   intervals,
   onIntervalsChange,
+  onResetToOriginal,
   isUploading,
 }) {
   const channelList = [
@@ -234,19 +235,36 @@ export default function TemperatureTable({
             Output & Ambient).
           </p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
           <button
             type="button"
             className="btn btn-secondary"
             onClick={handleAddRow}
-            style={{ fontSize: "0.8rem", padding: "0.35rem 0.75rem" }}
+            style={{ fontSize: "0.8rem", padding: "0.35rem 0.65rem" }}
             title="Add a new test interval row"
           >
             ➕ Add Interval Row
           </button>
+          {onResetToOriginal && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={onResetToOriginal}
+              style={{
+                fontSize: "0.8rem",
+                padding: "0.35rem 0.65rem",
+                backgroundColor: "var(--bg-card-subtle)",
+                borderColor: "var(--border-color)",
+                color: "var(--text-primary)"
+              }}
+              title="Reset table back to original extracted readings"
+            >
+              🔄 Reset Table
+            </button>
+          )}
           <span
             className="badge badge-success"
-            style={{ padding: "0.35rem 0.75rem", fontSize: "0.8rem" }}
+            style={{ padding: "0.35rem 0.65rem", fontSize: "0.8rem" }}
           >
             Criteria: Temp Rise &lt; 40°C over Ambient
           </span>

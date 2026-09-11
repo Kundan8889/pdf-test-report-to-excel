@@ -6,7 +6,8 @@ export default function UploadProgress({
   processingStage,
   progressPercent = 0,
   processingDetails,
-  onUploadAnother
+  onUploadAnother,
+  onReset
 }) {
   if (!currentFile && !isUploading && processingStage === 'idle') return null;
 
@@ -94,17 +95,36 @@ export default function UploadProgress({
               <span>{isCompleted ? 'Report Analysis Complete' : isError ? 'Extraction Error' : 'Processing Pipeline Active'}</span>
             </span>
 
-            {onUploadAnother && (
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={onUploadAnother}
-                style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
-                title="Upload another PDF report"
-              >
-                📁 Upload New PDF
-              </button>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              {onUploadAnother && (
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={onUploadAnother}
+                  style={{ fontSize: '0.8rem', padding: '0.35rem 0.65rem' }}
+                  title="Upload another PDF report"
+                >
+                  📁 Upload New PDF
+                </button>
+              )}
+              {onReset && (
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={onReset}
+                  style={{
+                    fontSize: '0.8rem',
+                    padding: '0.35rem 0.65rem',
+                    color: 'var(--danger-text)',
+                    borderColor: 'var(--border-color)',
+                    backgroundColor: 'var(--bg-card-subtle)'
+                  }}
+                  title="Reset and clear all current data"
+                >
+                  🔄 Reset
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
