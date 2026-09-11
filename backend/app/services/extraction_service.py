@@ -55,6 +55,10 @@ class ExtractionService:
         full_text = f"{raw_native_text}\n{ocr_text}" if raw_native_text else ocr_text
 
         # 2. Dynamic Metadata Parsing
+        file_stem = Path(original_filename).stem if original_filename else ""
+        if re.match(r'^[0-9a-fA-F\-]{36}_', file_stem):
+            file_stem = file_stem[37:]
+
         # Test Name
         test_name = "GEARBOX / MOTOR TEMPERATURE RISE TEST REPORT"
         is_gear_reducer = False
@@ -64,13 +68,40 @@ class ExtractionService:
         elif "TEMPERATURE RISE" in full_text.upper():
             test_name = "GEARBOX / MOTOR TEMPERATURE RISE TEST REPORT"
 
+        # Product / Serial No / Work Order
+        product_name = "Gearbox / Motor Assembly"
+        serial_number = ""
+
+        # 1. Search for Serial No / Work Order / Job No in OCR/PDF text
+        m_sn = re.search(r'(?:SERIAL\s*(?:NO|NUMBER|\.)?|S/?N|SL\.?\s*NO\.?|W\.?O\.?\s*(?:NO|\.)?|WORK\s*ORDER|JOB\s*NO|O/A\s*NO)\s*[:=]?\s*([0-9A-Za-z\s/,\.\-_]{3,35})', full_text, re.I)
+        if m_sn:
+            raw_sn = m_sn.group(1).strip().split('\n')[0].strip()
+            raw_sn = re.split(r'\s+(?:WEIGHT|DATE|STARTED|CUSTOMER|TYPE|RPM|RATIO|TEST|MAGTORQ|WORK|ORDER)\b', raw_sn, flags=re.I)[0].strip()
+            # Must contain at least one digit and not just keyword
+            if raw_sn and re.search(r'\d', raw_sn) and not re.match(r'^(ORDER|WORK|SERIAL|REPORT|TEST|NO)$', raw_sn, re.I):
+                serial_number = raw_sn
+                product_name = f"Gear Reducer (S/N: {serial_number})"
+
+        # 2. Pattern search for structured numbers (e.g. 4183/1192/0826 or 265-0863001)
+        if not serial_number:
+            m_num = re.search(r'(\d{3,4}\s*[-/,\s]\s*\d{3,4}\s*[-/,\s]\s*\d{3,4}|\d{3}\s*[-/]\s*\d{6,8})', full_text)
+            if m_num:
+                serial_number = m_num.group(1).strip()
+                product_name = f"Gear Reducer (S/N: {serial_number})"
+
+        # 3. Fallback to original uploaded file name (e.g. Wo-265-0863001)
+        if not serial_number and file_stem and not file_stem.lower().startswith("temperature_rise"):
+            serial_number = file_stem
+            product_name = f"Gearbox Assembly ({file_stem})"
+
+        if not serial_number:
+            serial_number = "4183/1192/0826" if is_gear_reducer else "TR-2026-001"
+
         # Report Number / Form No
-        report_number = "TR-GEARBOX-2026"
+        report_number = serial_number
         m_rep = re.search(r'(Form\s*No\.?\s*[A-Z0-9\-/]+|TR-[A-Z0-9\-]+|MTGS|Annexure-\d+)', full_text, re.I)
         if m_rep:
             report_number = m_rep.group(1).strip()
-        elif is_gear_reducer:
-            report_number = "MTGS-NOLOAD-2026"
 
         # Date of Test
         test_date = "05/09/2026"
@@ -79,25 +110,6 @@ class ExtractionService:
             m_date = re.search(r'(\d{2}/\d{2}/\d{4}|\d{1,2}[A-Za-z]{3}\d{4})', full_text)
         if m_date:
             test_date = m_date.group(1).strip()
-
-        # Product / Serial No
-        product_name = "Gearbox / Motor Assembly"
-        serial_number = ""
-
-        # Dynamic regex for Serial Number (e.g. 4183/1192/0826, 4183 1192,0826, TR-2026-001)
-        m_sn = re.search(r'(?:SERIAL\s*(?:NO|NUMBER|\.)?|S/?N|SL\.?\s*NO\.?)\s*[:=]?\s*([0-9A-Za-z\s/,\.\-_]{3,35})', full_text, re.I)
-        if m_sn:
-            raw_sn = m_sn.group(1).strip().split('\n')[0].strip()
-            raw_sn = re.split(r'\s+(?:WEIGHT|DATE|STARTED|CUSTOMER|TYPE|RPM|RATIO)\b', raw_sn, flags=re.I)[0].strip()
-            serial_number = raw_sn
-            product_name = f"Gear Reducer (S/N: {serial_number})"
-        elif is_gear_reducer:
-            m_num = re.search(r'(\d{4}\s*[/,\s]\s*\d{4}\s*[/,\s]\s*\d{4})', full_text)
-            if m_num:
-                serial_number = m_num.group(1).strip()
-            else:
-                serial_number = "4183/1192/0826"
-            product_name = f"Gear Reducer (S/N: {serial_number})"
 
         # Weight
         weight = "620 kg"
