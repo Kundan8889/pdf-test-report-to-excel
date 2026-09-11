@@ -145,10 +145,26 @@ class ExtractionService:
         test_date = ""
         if raw_date:
             d = raw_date.strip()
-            if re.match(r'^\d{4}$', d):  # e.g. '0108' -> '01/08/2026'
+            # Normalize OCR artifacts in date
+            d = re.sub(r'[oO]', '0', d)
+            d = re.sub(r'[lI|]', '/', d)
+            d = re.sub(r'[\\]', '/', d)
+            d = re.sub(r'\s+', '/', d)
+            d = re.sub(r'/+', '/', d)
+            d = re.sub(r'[^0-9/.\-]', '', d).strip('/.-')
+            parts = [p for p in re.split(r'[/.\-]', d) if p]
+            if len(parts) == 2:
+                m_yr = re.search(r'\b(202[4-9])\b', full_text)
+                year = m_yr.group(1) if m_yr else "2026"
+                test_date = f"{parts[0].zfill(2)}/{parts[1].zfill(2)}/{year}"
+            elif len(parts) == 3:
+                yr = parts[2] if len(parts[2]) == 4 else f"20{parts[2]}"
+                test_date = f"{parts[0].zfill(2)}/{parts[1].zfill(2)}/{yr}"
+            elif len(d) == 4 and d.isdigit():
                 test_date = f"{d[:2]}/{d[2:]}/2026"
             else:
                 test_date = d
+
         if not test_date:
             m_date = re.search(r'DATE\s*(?:OF\s*TEST)?\s*[:=]?\s*([0-9]{1,2}[-/.][0-9]{1,2}[-/.][0-9]{2,4}|[0-9]{1,2}\s+[A-Za-z]{3,9}\s+[0-9]{2,4})', full_text, re.I)
             if not m_date:
@@ -185,15 +201,30 @@ class ExtractionService:
         if not duration:
             duration = "6 hours ( 3.5 hours CW & 2.5 hours CCW)" if is_gear_reducer else "1 hour ( 30 minutes CW & 30 minutes CCW)"
 
-        # Product / Assembly
+        # Product / Assembly (Clean OCR artifacts for Planetary, Helical, Bevel)
+        clean_type = "Gear Reducer"
         if type_val:
-            product_name = f"{type_val} (S/N: {serial_number})"
+            t = type_val.strip()
+            if re.search(r'pl[a-z]{1,5}n[a-z]{0,4}y|planet|plaun|plau', t, re.I):
+                clean_type = "Planetary Gear Reducer"
+            elif re.search(r'helica|helical', t, re.I):
+                clean_type = "Helical Gear Reducer"
+            elif re.search(r'bevel', t, re.I):
+                clean_type = "Bevel Gear Reducer"
+            elif re.search(r'worm', t, re.I):
+                clean_type = "Worm Gear Reducer"
+            else:
+                clean_type = t
         elif is_gear_reducer:
-            product_name = f"Gear Reducer (S/N: {serial_number})"
-        else:
-            product_name = f"Gearbox / Motor Assembly ({serial_number})"
+            clean_type = "Planetary Gear Reducer"
 
-        report_number = drawing_no if drawing_no else (serial_number or "TR-2026-001")
+        formatted_sn = serial_number
+        if re.match(r'^\d{12}$', serial_number):
+            formatted_sn = f"{serial_number[:4]} {serial_number[4:8]} {serial_number[8:]}"
+
+        product_name = f"{clean_type} (S/N: {formatted_sn})" if formatted_sn else clean_type
+
+        report_number = drawing_no if drawing_no else (formatted_sn or "TR-2026-001")
 
         # Noise Level
         noise_level_limit = "< 85 dB"
