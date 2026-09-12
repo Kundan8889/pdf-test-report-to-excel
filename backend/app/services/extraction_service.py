@@ -4,6 +4,7 @@ from typing import Dict, Any, List
 from app.models.schemas import TestMetadata, TimeIntervalReading, ExtractionData
 from app.services.pdf_service import PDFService
 from app.services.ocr_service import OCRService
+from app.services.gemini_service import GeminiService
 
 class ExtractionService:
     @staticmethod
@@ -72,9 +73,27 @@ class ExtractionService:
         images = pdf_res.get("images", [])
         is_scanned = True
 
+        # 1. High-Accuracy Vision AI Extraction (if GEMINI_API_KEY configured)
+        if GeminiService.is_available() and images:
+            try:
+                img_data = getattr(images[0], "data", None)
+                if img_data:
+                    ai_result = GeminiService.extract_with_vision(img_data, original_filename)
+                    if ai_result and ai_result.get("intervals"):
+                        return ExtractionData(
+                            file_id=file_id,
+                            original_filename=original_filename,
+                            is_scanned=True,
+                            metadata=ai_result["metadata"],
+                            intervals=ai_result["intervals"],
+                            warnings=[]
+                        )
+            except Exception as e:
+                print(f"Gemini Vision extraction error: {e}, falling back to local OCR engine.")
+
         all_ocr_items: List[Dict[str, Any]] = []
 
-        # 1. OCR Extraction with memory safety and auto-rotation (Only Page 1)
+        # 2. Local OCR Fallback Extraction with memory safety and auto-rotation (Only Page 1)
         for p_idx, img_obj in enumerate(images[:1]):
             try:
                 data = getattr(img_obj, "data", None)
