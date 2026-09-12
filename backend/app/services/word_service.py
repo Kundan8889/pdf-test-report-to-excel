@@ -21,8 +21,8 @@ class WordService:
         cell._tc.get_or_add_tcPr().append(shading)
 
     @staticmethod
-    def _set_cell_margins(cell, top=60, bottom=60, left=80, right=80):
-        """Sets compact cell internal margins in twips (20 twips = 1 pt)."""
+    def _set_cell_margins(cell, top=70, bottom=70, left=50, right=50):
+        """Sets comfortable cell internal margins in twips (20 twips = 1 pt)."""
         tcPr = cell._tc.get_or_add_tcPr()
         tcMar = parse_xml(
             f'<w:tcMar {nsdecls("w")}>'
@@ -60,38 +60,38 @@ class WordService:
         """
         doc = Document()
 
-        # 1. Configure A4 Landscape Page Setup with compact margins
+        # 1. Configure standard ISO A4 Landscape Page Setup (297 mm x 210 mm)
         section = doc.sections[0]
         section.orientation = WD_ORIENT.LANDSCAPE
-        section.page_width = Inches(11.69)   # A4 width in landscape (297 mm)
-        section.page_height = Inches(8.27)   # A4 height in landscape (210 mm)
-        section.top_margin = Inches(0.35)
-        section.bottom_margin = Inches(0.35)
-        section.left_margin = Inches(0.40)
-        section.right_margin = Inches(0.40)
+        section.page_width = Inches(11.693)   # Exact A4 width in landscape (297 mm)
+        section.page_height = Inches(8.268)   # Exact A4 height in landscape (210 mm)
+        section.top_margin = Inches(0.40)
+        section.bottom_margin = Inches(0.40)
+        section.left_margin = Inches(0.45)
+        section.right_margin = Inches(0.45)
 
         # Set default font
         style = doc.styles['Normal']
         font = style.font
         font.name = 'Calibri'
-        font.size = Pt(8.5)
+        font.size = Pt(9.0)
         font.color.rgb = RGBColor(0x1E, 0x29, 0x3B)
 
-        # Total usable width = 11.69 - 0.80 = 10.89 inches
-        # 21 Columns: Time (0.65 in), Direction (0.55 in), 18 channels (0.50 in each = 9.0 in), Ambient (0.60 in)
+        # Total printable width = 11.693 - 0.90 = 10.793 inches
+        # 21 Columns: Time (0.75 in), Direction (0.65 in), 18 channels (0.485 in each = 8.73 in), Ambient (0.663 in)
         col_widths = [
-            Inches(0.65),  # 0: Time
-            Inches(0.55),  # 1: Direction
-            Inches(0.50), Inches(0.50),  # 2,3: Input (Act, Rise)
-            Inches(0.50), Inches(0.50),  # 4,5: Body (Act, Rise)
-            Inches(0.50), Inches(0.50),  # 6,7: Body 2 (Act, Rise)
-            Inches(0.50), Inches(0.50),  # 8,9: BC1
-            Inches(0.50), Inches(0.50),  # 10,11: BC2
-            Inches(0.50), Inches(0.50),  # 12,13: BC3
-            Inches(0.50), Inches(0.50),  # 14,15: BC4
-            Inches(0.50), Inches(0.50),  # 16,17: BC5
-            Inches(0.50), Inches(0.50),  # 18,19: Output (Act, Rise)
-            Inches(0.60),  # 20: Ambient
+            Inches(0.75),  # 0: Time
+            Inches(0.65),  # 1: Direction
+            Inches(0.485), Inches(0.485),  # 2,3: Ch1 (Act, Rise)
+            Inches(0.485), Inches(0.485),  # 4,5: Ch2 (Act, Rise)
+            Inches(0.485), Inches(0.485),  # 6,7: Ch3 (Act, Rise)
+            Inches(0.485), Inches(0.485),  # 8,9: Ch4 (Act, Rise)
+            Inches(0.485), Inches(0.485),  # 10,11: Ch5 (Act, Rise)
+            Inches(0.485), Inches(0.485),  # 12,13: Ch6 (Act, Rise)
+            Inches(0.485), Inches(0.485),  # 14,15: Ch7 (Act, Rise)
+            Inches(0.485), Inches(0.485),  # 16,17: Ch8 (Act, Rise)
+            Inches(0.485), Inches(0.485),  # 18,19: Ch9 (Act, Rise)
+            Inches(0.663),  # 20: Ambient
         ]
 
         total_cols = 21
@@ -108,20 +108,20 @@ class WordService:
             for c_idx, width in enumerate(col_widths):
                 row.cells[c_idx].width = width
 
-        def format_cell(cell, text, bold=False, color_rgb=(0x1E, 0x29, 0x3B), bg_color=None, align=WD_ALIGN_PARAGRAPH.LEFT, font_size=8.0):
+        def format_cell(cell, text, bold=False, color_rgb=(0x1E, 0x29, 0x3B), bg_color=None, align=WD_ALIGN_PARAGRAPH.LEFT, font_size=9.0):
             cell.text = ""
             p = cell.paragraphs[0]
             p.alignment = align
             p.paragraph_format.space_before = Pt(0)
             p.paragraph_format.space_after = Pt(0)
-            p.paragraph_format.line_spacing = 1.0
+            p.paragraph_format.line_spacing = 1.05
             run = p.add_run(str(text) if text is not None else "")
             run.font.name = 'Calibri'
             run.font.size = Pt(font_size)
             run.font.bold = bold
             run.font.color.rgb = RGBColor(*color_rgb)
             cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
-            cls._set_cell_margins(cell, top=30, bottom=30, left=40, right=40)
+            cls._set_cell_margins(cell, top=70, bottom=70, left=50, right=50)
             cls._set_cell_border(cell)
             if bg_color:
                 cls._set_cell_background(cell, bg_color)
@@ -132,7 +132,7 @@ class WordService:
         title_cell = table.cell(current_row_idx, 0)
         for c in range(1, total_cols):
             title_cell.merge(table.cell(current_row_idx, c))
-        format_cell(title_cell, metadata.test_name or "GEARBOX / MOTOR TEMPERATURE RISE TEST REPORT", bold=True, color_rgb=(0xFF, 0xFF, 0xFF), bg_color="1E3A8A", align=WD_ALIGN_PARAGRAPH.CENTER, font_size=11.0)
+        format_cell(title_cell, metadata.test_name or "GEARBOX / MOTOR TEMPERATURE RISE TEST REPORT", bold=True, color_rgb=(0xFF, 0xFF, 0xFF), bg_color="1E3A8A", align=WD_ALIGN_PARAGRAPH.CENTER, font_size=12.0)
         current_row_idx += 1
 
         # 2. Info Block (Rows 1 to 4)
