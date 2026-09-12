@@ -125,17 +125,27 @@ class ExcelService:
         ws.row_dimensions[10].height = 22
         ws.row_dimensions[11].height = 20
 
-        # Component Groups (Cols 3 to 20)
+        # Dynamic Component Groups from metadata.channel_labels (Cols 3 to 20)
+        raw_labels = metadata.channel_labels or [
+            "Input", "Body", "Body", "Bearing cover 1",
+            "Bearing Cover 2", "Bearing Cover 3", "Bearing Cover 4",
+            "Bearing Cover 5", "Output"
+        ]
+        clean_labels = [
+            l for l in raw_labels
+            if not re.search(r'^(ambient|amb|noise|time|direction|direct)$', str(l).strip(), re.I)
+        ]
+        default_names = ["Input", "Body", "Body", "Bearing cover 1", "Bearing Cover 2", "Bearing Cover 3", "Bearing Cover 4", "Bearing Cover 5", "Output"]
+        final_names = []
+        for i in range(9):
+            if i < len(clean_labels) and clean_labels[i]:
+                final_names.append(str(clean_labels[i]).strip())
+            else:
+                final_names.append(default_names[i])
+
         components = [
-            ("input", 3, 4),
-            ("body", 5, 6),
-            ("body", 7, 8),
-            ("Bearing cover 1", 9, 10),
-            ("Bearing Cover 2", 11, 12),
-            ("Bearing Cover 3", 13, 14),
-            ("Bearing Cover 4", 15, 16),
-            ("Bearing Cover 5", 17, 18),
-            ("output", 19, 20)
+            (name, 3 + i * 2, 4 + i * 2)
+            for i, name in enumerate(final_names)
         ]
 
         # Col 1: Time
@@ -274,16 +284,6 @@ class ExcelService:
         ws.cell(row=current_row, column=13, value=metadata.lubrication_leakage).font = FONT_REGULAR
         ws.cell(row=current_row, column=13).alignment = ALIGN_CENTER
 
-        for c in range(1, 22):
-            ws.cell(row=current_row, column=c).border = BORDER_ALL
-
-        current_row += 2
-        # Overall compliance footer
-        ws.row_dimensions[current_row].height = 22
-        ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=21)
-        ws.cell(row=current_row, column=1, value="OVERALL RESULT: COMPLIES - ALL MEASURED TEMPERATURE RISES ARE WITHIN < 40°C LIMIT").font = FONT_PASS
-        ws.cell(row=current_row, column=1).alignment = ALIGN_CENTER
-        ws.cell(row=current_row, column=1).fill = PASS_FILL
         for c in range(1, 22):
             ws.cell(row=current_row, column=c).border = BORDER_ALL
 

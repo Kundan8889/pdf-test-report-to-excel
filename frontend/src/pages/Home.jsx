@@ -304,6 +304,7 @@ export default function Home() {
           intervals={intervals}
           onIntervalsChange={handleIntervalsChange}
           onResetToOriginal={originalExtraction ? handleResetToOriginal : null}
+          onResetAll={metadata ? handleResetAll : null}
           isUploading={isUploading}
         />
 

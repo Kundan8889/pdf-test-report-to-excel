@@ -39,6 +39,7 @@ class TestMetadata(BaseModel):
     temp_rise_limit: str = Field("< 40°C over ambient (after 1 hour)", description="Acceptance criteria")
     lubrication_leakage: str = Field("No leakage", description="Lubrication check")
     conclusion: str = Field("COMPLIES", description="Overall Test Result")
+    channel_labels: Optional[List[str]] = Field(default=None, description="Dynamic extracted column/channel labels from document header")
 
 class ExtractionData(BaseModel):
     file_id: str

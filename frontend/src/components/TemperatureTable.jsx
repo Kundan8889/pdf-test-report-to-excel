@@ -1,13 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 
 export default function TemperatureTable({
   metadata,
   intervals,
   onIntervalsChange,
   onResetToOriginal,
+  onResetAll,
   isUploading,
 }) {
-  const channelList = [
+  const [resetFeedback, setResetFeedback] = useState(false);
+  const defaultChannelList = [
     { key: "input", label: "Input" },
     { key: "body1", label: "Body" },
     { key: "body2", label: "Body" },
@@ -17,6 +19,27 @@ export default function TemperatureTable({
     { key: "bc4", label: "Bearing Cover 4" },
     { key: "bc5", label: "Bearing Cover 5" },
     { key: "output", label: "Output" },
+  ];
+
+  const rawLabels = metadata?.channel_labels || [];
+  const cleanLabels = Array.isArray(rawLabels)
+    ? rawLabels.filter(
+        (l) =>
+          !/^(ambient|amb|noise|time|direction|direct)$/i.test(
+            String(l).trim()
+          )
+      )
+    : [];
+
+  const dynamicChannelList = defaultChannelList.map((ch, idx) => {
+    if (idx < cleanLabels.length && cleanLabels[idx]) {
+      return { ...ch, label: String(cleanLabels[idx]).trim() };
+    }
+    return ch;
+  });
+
+  const channelList = [
+    ...dynamicChannelList,
     { key: "ambient", label: "Ambient" },
   ];
 
@@ -249,17 +272,40 @@ export default function TemperatureTable({
             <button
               type="button"
               className="btn btn-secondary"
-              onClick={onResetToOriginal}
+              onClick={() => {
+                onResetToOriginal();
+                setResetFeedback(true);
+                setTimeout(() => setResetFeedback(false), 2000);
+              }}
+              style={{
+                fontSize: "0.8rem",
+                padding: "0.35rem 0.65rem",
+                backgroundColor: resetFeedback ? "var(--success-bg)" : "var(--bg-card-subtle)",
+                borderColor: resetFeedback ? "var(--success-text)" : "var(--border-color)",
+                color: resetFeedback ? "var(--success-text)" : "var(--text-primary)",
+                fontWeight: resetFeedback ? 700 : 500,
+                transition: "all 0.2s ease"
+              }}
+              title="Reset table back to original extracted readings"
+            >
+              {resetFeedback ? "✓ Table Reset!" : "🔄 Reset Table"}
+            </button>
+          )}
+          {onResetAll && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={onResetAll}
               style={{
                 fontSize: "0.8rem",
                 padding: "0.35rem 0.65rem",
                 backgroundColor: "var(--bg-card-subtle)",
                 borderColor: "var(--border-color)",
-                color: "var(--text-primary)"
+                color: "var(--text-secondary)"
               }}
-              title="Reset table back to original extracted readings"
+              title="Clear report and upload a new PDF"
             >
-              🔄 Reset Table
+              🗑️ Upload New PDF
             </button>
           )}
           <span
@@ -351,96 +397,19 @@ export default function TemperatureTable({
               >
                 Direction
               </th>
-              <th
-                colSpan="2"
-                style={{
-                  border: "1px solid var(--table-border)",
-                  padding: "0.4rem",
-                  minWidth: "140px",
-                }}
-              >
-                input
-              </th>
-              <th
-                colSpan="2"
-                style={{
-                  border: "1px solid var(--table-border)",
-                  padding: "0.4rem",
-                  minWidth: "140px",
-                }}
-              >
-                body
-              </th>
-              <th
-                colSpan="2"
-                style={{
-                  border: "1px solid var(--table-border)",
-                  padding: "0.4rem",
-                  minWidth: "140px",
-                }}
-              >
-                body
-              </th>
-              <th
-                colSpan="2"
-                style={{
-                  border: "1px solid var(--table-border)",
-                  padding: "0.4rem",
-                  minWidth: "140px",
-                }}
-              >
-                Bearing cover 1
-              </th>
-              <th
-                colSpan="2"
-                style={{
-                  border: "1px solid var(--table-border)",
-                  padding: "0.4rem",
-                  minWidth: "140px",
-                }}
-              >
-                Bearing Cover 2
-              </th>
-              <th
-                colSpan="2"
-                style={{
-                  border: "1px solid var(--table-border)",
-                  padding: "0.4rem",
-                  minWidth: "140px",
-                }}
-              >
-                Bearing Cover 3
-              </th>
-              <th
-                colSpan="2"
-                style={{
-                  border: "1px solid var(--table-border)",
-                  padding: "0.4rem",
-                  minWidth: "140px",
-                }}
-              >
-                Bearing Cover 4
-              </th>
-              <th
-                colSpan="2"
-                style={{
-                  border: "1px solid var(--table-border)",
-                  padding: "0.4rem",
-                  minWidth: "140px",
-                }}
-              >
-                Bearing Cover 5
-              </th>
-              <th
-                colSpan="2"
-                style={{
-                  border: "1px solid var(--table-border)",
-                  padding: "0.4rem",
-                  minWidth: "140px",
-                }}
-              >
-                output
-              </th>
+              {dynamicChannelList.map((ch, idx) => (
+                <th
+                  key={idx}
+                  colSpan="2"
+                  style={{
+                    border: "1px solid var(--table-border)",
+                    padding: "0.4rem",
+                    minWidth: "140px",
+                  }}
+                >
+                  {ch.label}
+                </th>
+              ))}
               <th
                 rowSpan="2"
                 style={{
