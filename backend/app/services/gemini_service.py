@@ -31,9 +31,11 @@ class GeminiService:
             return None
 
         models_to_try = [
-            "gemini-1.5-flash",
-            "gemini-2.0-flash",
-            "gemini-1.5-pro"
+            "gemini-flash-latest",
+            "gemini-3.5-flash-lite",
+            "gemini-3.5-flash",
+            "gemini-pro-latest",
+            "gemini-2.5-flash"
         ]
 
         b64_image = base64.b64encode(image_bytes).decode("utf-8")
@@ -139,18 +141,27 @@ CRITICAL EXTRACTION RULES:
         meta_dict = data.get("metadata", {})
         raw_intervals = data.get("intervals", [])
 
+        def _get_val(d: dict, *keys, default=28.0) -> float:
+            for k in keys:
+                if k in d and d[k] is not None:
+                    try:
+                        return float(d[k])
+                    except (ValueError, TypeError):
+                        pass
+            return default
+
         processed_intervals: List[TimeIntervalReading] = []
         for item in raw_intervals:
-            amb = float(item.get("ambient", 28.0) or 28.0)
-            inp = float(item.get("input_actual", 27.5) or 27.5)
-            b1 = float(item.get("body_actual", 26.6) or 26.6)
-            b2 = float(item.get("body2_actual", b1) or b1)
-            bc1 = float(item.get("bc1_actual", b1) or b1)
-            bc2 = float(item.get("bc2_actual", b1) or b1)
-            bc3 = float(item.get("bc3_actual", b1) or b1)
-            bc4 = float(item.get("bc4_actual", b1) or b1)
-            bc5 = float(item.get("bc5_actual", b1) or b1)
-            out = float(item.get("output_actual", b1) or b1)
+            amb = _get_val(item, "ambient", "ambient_temp", "amb", default=28.0)
+            inp = _get_val(item, "input_actual", "input", "inp", default=27.5)
+            b1 = _get_val(item, "body_actual", "body", "body1", "b1", default=26.6)
+            b2 = _get_val(item, "body2_actual", "body2", "b2", default=b1)
+            bc1 = _get_val(item, "bc1_actual", "bc1", "bearing_cover_1", default=b1)
+            bc2 = _get_val(item, "bc2_actual", "bc2", "bearing_cover_2", default=b1)
+            bc3 = _get_val(item, "bc3_actual", "bc3", "bearing_cover_3", default=b1)
+            bc4 = _get_val(item, "bc4_actual", "bc4", "bearing_cover_4", default=b1)
+            bc5 = _get_val(item, "bc5_actual", "bc5", "bearing_cover_5", default=b1)
+            out = _get_val(item, "output_actual", "output", "out", default=b1)
 
             direction = str(item.get("direction", "CW") or "CW").strip().upper()
             direction = "CCW" if "CCW" in direction else "CW"
