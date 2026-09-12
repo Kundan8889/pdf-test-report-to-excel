@@ -303,6 +303,7 @@ export default function Home() {
           metadata={metadata}
           intervals={intervals}
           onIntervalsChange={handleIntervalsChange}
+          onMetadataChange={handleMetadataChange}
           onResetToOriginal={originalExtraction ? handleResetToOriginal : null}
           onResetAll={metadata ? handleResetAll : null}
           isUploading={isUploading}

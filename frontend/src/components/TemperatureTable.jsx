@@ -4,11 +4,40 @@ export default function TemperatureTable({
   metadata,
   intervals,
   onIntervalsChange,
+  onMetadataChange,
   onResetToOriginal,
   onResetAll,
   isUploading,
 }) {
   const [resetFeedback, setResetFeedback] = useState(false);
+
+  // Dynamic / manual configurable threshold limit
+  const parseThreshold = (limitStr) => {
+    if (!limitStr) return 40.0;
+    const match = String(limitStr).match(/\d+(\.\d+)?/);
+    return match ? parseFloat(match[0]) : 40.0;
+  };
+
+  const [thresholdLimit, setThresholdLimit] = useState(() =>
+    parseThreshold(metadata?.temp_rise_limit)
+  );
+
+  React.useEffect(() => {
+    if (metadata?.temp_rise_limit) {
+      setThresholdLimit(parseThreshold(metadata.temp_rise_limit));
+    }
+  }, [metadata?.temp_rise_limit]);
+
+  const handleThresholdChange = (newVal) => {
+    const num = parseFloat(newVal) || 0;
+    setThresholdLimit(num);
+    if (onMetadataChange && metadata) {
+      onMetadataChange({
+        ...metadata,
+        temp_rise_limit: `< ${num}°C over the ambient ( after 1hour )`,
+      });
+    }
+  };
   const defaultChannelList = [
     { key: "input", label: "Input" },
     { key: "body1", label: "Body" },
@@ -308,12 +337,40 @@ export default function TemperatureTable({
               🗑️ Upload New PDF
             </button>
           )}
-          <span
+          <div
             className="badge badge-success"
-            style={{ padding: "0.35rem 0.65rem", fontSize: "0.8rem" }}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.35rem",
+              padding: "0.25rem 0.55rem",
+              fontSize: "0.8rem",
+            }}
           >
-            Criteria: Temp Rise &lt; 40°C over Ambient
-          </span>
+            <span>Criteria: Temp Rise &lt;</span>
+            <input
+              type="number"
+              step="1"
+              min="1"
+              max="200"
+              value={thresholdLimit}
+              onChange={(e) => handleThresholdChange(e.target.value)}
+              style={{
+                width: "48px",
+                textAlign: "center",
+                fontWeight: 700,
+                fontSize: "0.85rem",
+                color: "var(--success-text)",
+                backgroundColor: "var(--bg-card)",
+                border: "1px solid var(--success-text)",
+                borderRadius: "0.25rem",
+                padding: "0.1rem 0.2rem",
+                outline: "none"
+              }}
+              title="Click and type to change temperature rise limit (e.g. 45°C or 30°C)"
+            />
+            <span>°C over Ambient</span>
+          </div>
         </div>
       </div>
 
@@ -587,7 +644,7 @@ export default function TemperatureTable({
                     padding: "0.25rem",
                     fontWeight: 600,
                     color:
-                      row.input_rise > 40
+                      row.input_rise > thresholdLimit
                         ? "var(--danger-text)"
                         : "var(--table-rise-text)",
                     backgroundColor: "var(--table-rise-bg)",
@@ -628,7 +685,7 @@ export default function TemperatureTable({
                     padding: "0.25rem",
                     fontWeight: 600,
                     color:
-                      row.body_rise > 40
+                      row.body_rise > thresholdLimit
                         ? "var(--danger-text)"
                         : "var(--table-rise-text)",
                     backgroundColor: "var(--table-rise-bg)",
@@ -669,7 +726,7 @@ export default function TemperatureTable({
                     padding: "0.25rem",
                     fontWeight: 600,
                     color:
-                      (row.body2_rise ?? row.body_rise) > 40
+                      (row.body2_rise ?? row.body_rise) > thresholdLimit
                         ? "var(--danger-text)"
                         : "var(--table-rise-text)",
                     backgroundColor: "var(--table-rise-bg)",
@@ -710,7 +767,7 @@ export default function TemperatureTable({
                     padding: "0.25rem",
                     fontWeight: 600,
                     color:
-                      row.bc1_rise > 40
+                      row.bc1_rise > thresholdLimit
                         ? "var(--danger-text)"
                         : "var(--table-rise-text)",
                     backgroundColor: "var(--table-rise-bg)",
@@ -751,7 +808,7 @@ export default function TemperatureTable({
                     padding: "0.25rem",
                     fontWeight: 600,
                     color:
-                      row.bc2_rise > 40
+                      row.bc2_rise > thresholdLimit
                         ? "var(--danger-text)"
                         : "var(--table-rise-text)",
                     backgroundColor: "var(--table-rise-bg)",
@@ -792,7 +849,7 @@ export default function TemperatureTable({
                     padding: "0.25rem",
                     fontWeight: 600,
                     color:
-                      row.bc3_rise > 40
+                      row.bc3_rise > thresholdLimit
                         ? "var(--danger-text)"
                         : "var(--table-rise-text)",
                     backgroundColor: "var(--table-rise-bg)",
@@ -833,7 +890,7 @@ export default function TemperatureTable({
                     padding: "0.25rem",
                     fontWeight: 600,
                     color:
-                      row.bc4_rise > 40
+                      row.bc4_rise > thresholdLimit
                         ? "var(--danger-text)"
                         : "var(--table-rise-text)",
                     backgroundColor: "var(--table-rise-bg)",
@@ -874,7 +931,7 @@ export default function TemperatureTable({
                     padding: "0.25rem",
                     fontWeight: 600,
                     color:
-                      row.bc5_rise > 40
+                      row.bc5_rise > thresholdLimit
                         ? "var(--danger-text)"
                         : "var(--table-rise-text)",
                     backgroundColor: "var(--table-rise-bg)",
@@ -915,7 +972,7 @@ export default function TemperatureTable({
                     padding: "0.25rem",
                     fontWeight: 600,
                     color:
-                      row.output_rise > 40
+                      row.output_rise > thresholdLimit
                         ? "var(--danger-text)"
                         : "var(--table-rise-text)",
                     backgroundColor: "var(--table-rise-bg)",

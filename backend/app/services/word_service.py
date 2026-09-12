@@ -242,6 +242,12 @@ class WordService:
         current_row_idx += 2
 
         # 6. Data Rows
+        threshold = 40.0
+        if metadata.temp_rise_limit:
+            m_th = re.search(r'\d+(?:\.\d+)?', metadata.temp_rise_limit)
+            if m_th:
+                threshold = float(m_th.group(0))
+
         for row_idx, item in enumerate(intervals):
             r_bg = "F8FAFC" if row_idx % 2 == 1 else None
 
@@ -273,9 +279,9 @@ class WordService:
             col_curr = 2
             for act, rise in val_pairs:
                 format_cell(table.cell(current_row_idx, col_curr), f"{act:.1f}", bg_color=r_bg, align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
-                # Temp rise with subtle red if > 40
-                rise_bg = "FEE2E2" if rise > 40.0 else r_bg
-                rise_color = (0xDC, 0x26, 0x26) if rise > 40.0 else (0x1E, 0x29, 0x3B)
+                # Temp rise with subtle red if > threshold
+                rise_bg = "FEE2E2" if rise > threshold else r_bg
+                rise_color = (0xDC, 0x26, 0x26) if rise > threshold else (0x1E, 0x29, 0x3B)
                 format_cell(table.cell(current_row_idx, col_curr + 1), f"{rise:.1f}", color_rgb=rise_color, bg_color=rise_bg, align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
                 col_curr += 2
 
