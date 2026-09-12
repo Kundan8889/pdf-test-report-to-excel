@@ -97,8 +97,8 @@ class WordService:
         total_cols = 21
 
         # Calculate total rows required:
-        # Title (1) + Info (4) + Noise (1) + Temp Limit (1) + Table Header (2) + Intervals (N) + Lubrication (1) + Result (1)
-        num_rows = 1 + 4 + 1 + 1 + 2 + len(intervals) + 1 + 1
+        # Title (1) + Info (4) + Noise (1) + Temp Limit (1) + Table Header (2) + Intervals (N) + Lubrication (1)
+        num_rows = 1 + 4 + 1 + 1 + 2 + len(intervals) + 1
         table = doc.add_table(rows=num_rows, cols=total_cols)
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
         table.autofit = False
@@ -201,17 +201,27 @@ class WordService:
         c_dir_h.merge(table.cell(head_row2, 1))
         format_cell(c_dir_h, "Direction", bold=True, bg_color="E2E8F0", align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
 
-        # 9 Components
+        # Dynamic Component Groups from metadata.channel_labels (Cols 2 to 19)
+        raw_labels = metadata.channel_labels or [
+            "Input", "Body", "Body", "Bearing cover 1",
+            "Bearing Cover 2", "Bearing Cover 3", "Bearing Cover 4",
+            "Bearing Cover 5", "Output"
+        ]
+        clean_labels = [
+            l for l in raw_labels
+            if not re.search(r'^(ambient|amb|noise|noice|time|direction|direct)$', str(l).strip(), re.I)
+        ]
+        default_names = ["Input", "Body", "Body", "Bearing cover 1", "Bearing Cover 2", "Bearing Cover 3", "Bearing Cover 4", "Bearing Cover 5", "Output"]
+        final_names = []
+        for i in range(9):
+            if i < len(clean_labels) and clean_labels[i]:
+                final_names.append(str(clean_labels[i]).strip())
+            else:
+                final_names.append(default_names[i])
+
         components = [
-            ("input", 2, 3),
-            ("body", 4, 5),
-            ("body", 6, 7),
-            ("Bearing cover 1", 8, 9),
-            ("Bearing Cover 2", 10, 11),
-            ("Bearing Cover 3", 12, 13),
-            ("Bearing Cover 4", 14, 15),
-            ("Bearing Cover 5", 16, 17),
-            ("output", 18, 19)
+            (name, 2 + i * 2, 3 + i * 2)
+            for i, name in enumerate(final_names)
         ]
         for comp_name, start_c, end_c in components:
             top_c = table.cell(head_row1, start_c)
@@ -285,13 +295,6 @@ class WordService:
         c_lub_val2 = table.cell(current_row_idx, 12)
         c_lub_val2.merge(table.cell(current_row_idx, 20))
         format_cell(c_lub_val2, metadata.lubrication_leakage or "No leakage", align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
-        current_row_idx += 1
-
-        # 8. Overall Compliance Banner
-        c_res = table.cell(current_row_idx, 0)
-        for c in range(1, total_cols):
-            c_res.merge(table.cell(current_row_idx, c))
-        format_cell(c_res, "OVERALL RESULT: COMPLIES - ALL MEASURED TEMPERATURE RISES ARE WITHIN < 40°C LIMIT", bold=True, color_rgb=(0x15, 0x80, 0x3D), bg_color="DCFCE7", align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.5)
 
         out_path = get_output_path(output_filename)
         doc.save(str(out_path))
