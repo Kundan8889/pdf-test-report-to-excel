@@ -9,13 +9,16 @@ from app.models.schemas import TestMetadata, TimeIntervalReading
 class GeminiService:
     @classmethod
     def get_api_key(cls) -> Optional[str]:
-        """Fetches GEMINI_API_KEY from environment."""
-        key = os.getenv("GEMINI_API_KEY", "").strip()
+        """Fetches GEMINI_API_KEY_MAGTORQ from environment."""
+        key = (
+            os.getenv("GEMINI_API_KEY_MAGTORQ", "").strip()
+            or os.getenv("GEMINI_API_KEY", "").strip()
+        )
         return key if key else None
 
     @classmethod
     def is_available(cls) -> bool:
-        """Returns True if a GEMINI_API_KEY is configured."""
+        """Returns True if a GEMINI_API_KEY_MAGTORQ is configured."""
         return cls.get_api_key() is not None
 
     @classmethod
