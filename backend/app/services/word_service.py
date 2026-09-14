@@ -171,14 +171,14 @@ class WordService:
 
         # 3. Noise Level (Row 5)
         c_n1 = table.cell(current_row_idx, 0)
-        c_n1.merge(table.cell(current_row_idx, 2))
+        c_n1.merge(table.cell(current_row_idx, min(2, mid_split - 2)))
         format_cell(c_n1, "Noise level", bold=True, font_size=8.0)
 
-        c_n2 = table.cell(current_row_idx, 3)
-        c_n2.merge(table.cell(current_row_idx, max(3, total_cols - 6)))
+        c_n2 = table.cell(current_row_idx, min(3, mid_split - 1))
+        c_n2.merge(table.cell(current_row_idx, mid_split - 1))
         format_cell(c_n2, metadata.noise_level_limit or "< 85 dB", font_size=8.0)
 
-        c_n3 = table.cell(current_row_idx, max(4, total_cols - 5))
+        c_n3 = table.cell(current_row_idx, mid_split)
         c_n3.merge(table.cell(current_row_idx, total_cols - 1))
         format_cell(c_n3, metadata.noise_level_measured or "74.5 dB (1/2 hour)", bold=True, align=WD_ALIGN_PARAGRAPH.RIGHT, font_size=8.0)
         current_row_idx += 1

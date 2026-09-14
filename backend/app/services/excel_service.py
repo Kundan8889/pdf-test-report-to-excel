@@ -109,13 +109,14 @@ class ExcelService:
         ws["A8"].alignment = ALIGN_LEFT
         ws["A8"].border = BORDER_ALL
 
-        ws.merge_cells(start_row=8, start_column=3, end_row=8, end_column=max(3, total_cols - 3))
-        ws.cell(row=8, column=3, value=metadata.noise_level_limit).font = FONT_REGULAR
-        ws.cell(row=8, column=3).alignment = ALIGN_LEFT
-        ws.cell(row=8, column=3).border = BORDER_ALL
+        ws.merge_cells(start_row=8, start_column=3, end_row=8, end_column=mid_split)
+        cell_nlim = ws.cell(row=8, column=3, value=metadata.noise_level_limit)
+        cell_nlim.font = FONT_REGULAR
+        cell_nlim.alignment = ALIGN_LEFT
+        cell_nlim.border = BORDER_ALL
 
-        ws.merge_cells(start_row=8, start_column=max(4, total_cols - 2), end_row=8, end_column=total_cols)
-        c_nmeas = ws.cell(row=8, column=max(4, total_cols - 2), value=metadata.noise_level_measured)
+        ws.merge_cells(start_row=8, start_column=mid_split + 1, end_row=8, end_column=total_cols)
+        c_nmeas = ws.cell(row=8, column=mid_split + 1, value=metadata.noise_level_measured)
         c_nmeas.font = FONT_BOLD
         c_nmeas.alignment = ALIGN_RIGHT
         c_nmeas.border = BORDER_ALL
