@@ -384,19 +384,70 @@ export default function TemperatureTable({
           marginBottom: "0.75rem",
           display: "flex",
           justifyContent: "space-between",
+          alignItems: "center",
           flexWrap: "wrap",
-          gap: "0.5rem",
+          gap: "0.75rem",
           fontSize: "0.85rem",
           color: "var(--text-primary)",
         }}
       >
-        <div>
-          <strong>Noise Level Limit:</strong>{" "}
-          {metadata?.noise_level_limit || "< 85 dB"} &nbsp;|&nbsp;{" "}
-          <strong>Measured (½ hr):</strong>{" "}
-          <span style={{ color: "var(--success-text)", fontWeight: 700 }}>
-            {metadata?.noise_level_measured || "72.1 dB"}
-          </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+            <strong>Noise Level Limit:</strong>
+            <input
+              type="text"
+              value={metadata?.noise_level_limit || "< 85 dB"}
+              onChange={(e) => {
+                if (onMetadataChange && metadata) {
+                  onMetadataChange({
+                    ...metadata,
+                    noise_level_limit: e.target.value
+                  });
+                }
+              }}
+              style={{
+                width: "80px",
+                padding: "0.15rem 0.35rem",
+                borderRadius: "0.25rem",
+                border: "1px solid var(--border-color)",
+                fontSize: "0.85rem",
+                backgroundColor: "var(--bg-card)",
+                color: "var(--text-primary)",
+                fontWeight: 600,
+                textAlign: "center"
+              }}
+              title="Click and type to adjust noise limit"
+            />
+          </div>
+          <span>&nbsp;|&nbsp;</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+            <strong>Measured Noise:</strong>
+            <input
+              type="text"
+              value={metadata?.noise_level_measured || ""}
+              placeholder="e.g. 78.5 dB"
+              onChange={(e) => {
+                if (onMetadataChange && metadata) {
+                  onMetadataChange({
+                    ...metadata,
+                    noise_level_measured: e.target.value
+                  });
+                }
+              }}
+              style={{
+                width: "95px",
+                padding: "0.15rem 0.35rem",
+                borderRadius: "0.25rem",
+                border: "1px solid var(--success-text)",
+                fontSize: "0.85rem",
+                fontWeight: 700,
+                color: "var(--success-text)",
+                backgroundColor: "var(--bg-card)",
+                textAlign: "center"
+              }}
+              title="Click and type to edit measured noise level"
+            />
+          </div>
         </div>
         <div>
           <strong>Acceptance Criteria:</strong>{" "}

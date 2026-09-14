@@ -101,7 +101,11 @@ CRITICAL EXTRACTION RULES:
    - Verify every row's direction carefully so that CW and CCW are 100% accurate.
 3. EXACT ROW COUNT: ONLY include the EXACT rows present in the image table (if there are 3 rows, return exactly 3 objects in intervals array; if 7 rows, return 7).
 4. EXACT NUMERICAL VALUES: Read handwritten digits with high precision (e.g. 25.1, 25.5, 24.3, 24.5, 30.8, 34.3, 49.6, etc.). Distinguish 7 from +, 1 from 7, 0 from 8.
-5. Return ONLY valid, parseable JSON with NO markdown formatting, NO triple backticks.
+5. NOISE LEVEL EXTRACTION:
+   - Check BOTH the upper specifications (e.g. 'NOISE LEVEL: ACTUAL - DB') AND any table column labeled 'Noise', 'Noies', 'Sound', or 'dB'.
+   - If values are written in the table under the 'Noise' / 'Noies' column (e.g. 78, 78.4, 78.5), extract the final/peak reading with units (e.g. '78.5 dB' or '78 dB') into metadata.noise_level_measured.
+   - Never omit noise if handwritten/printed values are present in the table or header.
+6. Return ONLY valid, parseable JSON with NO markdown formatting, NO triple backticks.
 """
 
         payload = {
@@ -212,6 +216,14 @@ CRITICAL EXTRACTION RULES:
                 output_rise=round(out - amb, 1)
             ))
 
+        noise_measured = str(meta_dict.get("noise_level_measured") or "").strip()
+        if not noise_measured or noise_measured in ["-", "None"]:
+            noise_measured = "-"
+        elif re.match(r'^\d+(\.\d+)?$', noise_measured):
+            noise_measured = f"{noise_measured} dB"
+
+        noise_limit = str(meta_dict.get("noise_level_limit") or "< 85 dB").strip()
+
         meta = TestMetadata(
             report_number=meta_dict.get("report_number", "MTGS"),
             serial_number=meta_dict.get("serial_number", ""),
@@ -222,8 +234,8 @@ CRITICAL EXTRACTION RULES:
             started_at=meta_dict.get("started_at", "10:00 AM"),
             direction_changed_at=meta_dict.get("direction_changed_at", "01:30 PM"),
             duration=meta_dict.get("duration", "6 hours"),
-            noise_level_limit=meta_dict.get("noise_level_limit", "< 85 dB"),
-            noise_level_measured=meta_dict.get("noise_level_measured", "74.5 dB (1/2 hour)"),
+            noise_level_limit=noise_limit,
+            noise_level_measured=noise_measured,
             temp_rise_limit=meta_dict.get("temp_rise_limit", "< 40°C over the ambient ( after 1hour )"),
             lubrication_leakage=meta_dict.get("lubrication_leakage", "No leakage"),
             conclusion=meta_dict.get("conclusion", "COMPLIES (ALL PARAMETERS PASS)"),
