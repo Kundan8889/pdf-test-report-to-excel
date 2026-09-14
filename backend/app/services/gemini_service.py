@@ -185,26 +185,95 @@ CRITICAL RULES:
                 print(f"Gemini API call failed for {model_name}: {e}")
 
         return None
-    @staticmethod
-    def _normalize_time(raw_time: str) -> str:
-        """Normalizes time format to ensure AM/PM is always at the end (e.g. '12:35 PM' instead of 'PM 12.35')."""
-        if not raw_time:
-            return ""
-        t = str(raw_time).strip()
-        # Fix prefix AM/PM e.g. "PM 12.35" or "Pm 12:35" or "am 10.00"
-        m_prefix = re.match(r'^(?:(AM|PM|am|pm))\s*[:.\-\s]?\s*([0-9]{1,2}[:.][0-9]{2})$', t, re.I)
-        if m_prefix:
-            period = m_prefix.group(1).upper()
-            time_part = m_prefix.group(2).replace('.', ':')
-            return f"{time_part} {period}"
-        # Fix trailing format e.g. "12.35 pm" -> "12:35 PM" or "12.35" -> "12:35"
-        m_suffix = re.match(r'^([0-9]{1,2})[:.]([0-9]{2})\s*(?:(AM|PM|am|pm))?$', t, re.I)
-        if m_suffix:
-            hh = m_suffix.group(1)
-            mm = m_suffix.group(2)
-            period = f" {m_suffix.group(3).upper()}" if m_suffix.group(3) else ""
-            return f"{hh}:{mm}{period}"
-        return t
+    @classmethod
+    def _format_and_propagate_times(cls, raw_times: List[str], started_at: str = "") -> List[str]:
+        """
+        Parses all time strings in the table sequence and ensures EVERY interval
+        has a clear, standard 12-hour time format with AM/PM (e.g. '12:35 PM', '12:50 PM', '1:05 PM').
+        """
+        parsed_entries = []
+        for raw in raw_times:
+            if not raw:
+                parsed_entries.append(None)
+                continue
+            t = str(raw).strip()
+            # Prefix AM/PM e.g. "PM 12.35", "Pm 12:35", "am 10:00"
+            m_pre = re.match(r'^(?:(AM|PM))\s*[:.\-\s]?\s*([0-9]{1,2})[:.]([0-9]{2})$', t, re.I)
+            if m_pre:
+                period = m_pre.group(1).upper()
+                hh = int(m_pre.group(2))
+                mm = int(m_pre.group(3))
+                parsed_entries.append({"hh": hh, "mm": mm, "period": period, "raw": t})
+                continue
+            
+            # Postfix AM/PM e.g. "12:35 PM", "12.35pm", "1:05 PM"
+            m_post = re.match(r'^([0-9]{1,2})[:.]([0-9]{2})\s*(?:(AM|PM))?$', t, re.I)
+            if m_post:
+                hh = int(m_post.group(1))
+                mm = int(m_post.group(2))
+                period = m_post.group(3).upper() if m_post.group(3) else None
+                # Handle 24-hr format (e.g. 13:20 -> 1:20 PM)
+                if hh >= 13 and hh <= 23:
+                    hh = hh - 12
+                    period = "PM"
+                parsed_entries.append({"hh": hh, "mm": mm, "period": period, "raw": t})
+                continue
+            
+            parsed_entries.append({"hh": None, "mm": None, "period": None, "raw": t})
+
+        # Determine initial period (AM or PM)
+        curr_period = None
+        if started_at:
+            if "PM" in started_at.upper():
+                curr_period = "PM"
+            elif "AM" in started_at.upper():
+                curr_period = "AM"
+        
+        if not curr_period:
+            for entry in parsed_entries:
+                if entry and entry["period"]:
+                    curr_period = entry["period"]
+                    break
+        
+        if not curr_period:
+            for entry in parsed_entries:
+                if entry and entry["hh"] is not None:
+                    curr_period = "AM" if 8 <= entry["hh"] < 12 else "PM"
+                    break
+            if not curr_period:
+                curr_period = "AM"
+
+        prev_hh = None
+        result = []
+        for entry in parsed_entries:
+            if not entry or entry["hh"] is None:
+                result.append(entry["raw"] if entry else "")
+                continue
+
+            hh = entry["hh"]
+            mm = entry["mm"]
+            explicit_period = entry["period"]
+
+            if explicit_period:
+                curr_period = explicit_period
+            else:
+                if prev_hh == 11 and hh == 12 and curr_period == "AM":
+                    curr_period = "PM"
+                elif prev_hh == 12 and hh == 1 and curr_period == "PM":
+                    curr_period = "PM"
+
+            prev_hh = hh
+            result.append(f"{hh}:{mm:02d} {curr_period.lower()}")
+
+        return result
+
+    @classmethod
+    def _normalize_time(cls, raw_time: str) -> str:
+        """Normalizes time format to ensure lowercase am/pm is at the end (e.g. '10:00 am', '1:30 pm')."""
+        if not raw_time or raw_time in ["-", "None"]:
+            return raw_time or "-"
+        res = cls._format_and_propagate_times([raw_time])
+        return res[0] if res else raw_time
 
     @classmethod
     def _postprocess_gemini_data(cls, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -230,8 +299,12 @@ CRITICAL RULES:
                         pass
             return default
 
+        raw_time_list = [str(item.get("time_label", "")).strip() for item in raw_intervals]
+        started_at_raw = str(meta_dict.get("started_at", "")).strip()
+        formatted_times = cls._format_and_propagate_times(raw_time_list, started_at_raw)
+
         processed_intervals: List[TimeIntervalReading] = []
-        for item in raw_intervals:
+        for idx, item in enumerate(raw_intervals):
             amb = _get_val(item, "ambient", "ambient_temp", "amb", default=28.0)
             inp = _get_val(item, "input_actual", "input", "inp", default=0.0)
             b1 = _get_val(item, "body_actual", "body", "body1", "b1", default=0.0)
@@ -246,11 +319,10 @@ CRITICAL RULES:
             direction = str(item.get("direction", "CW") or "CW").strip().upper()
             direction = "CCW" if "CCW" in direction else "CW"
 
-            raw_time_label = str(item.get("time_label", "")).strip()
-            clean_time_label = cls._normalize_time(raw_time_label)
+            time_str = formatted_times[idx] if idx < len(formatted_times) else ""
 
             processed_intervals.append(TimeIntervalReading(
-                time_label=clean_time_label,
+                time_label=time_str,
                 direction=direction,
                 ambient=amb,
                 input_actual=inp,
@@ -288,8 +360,8 @@ CRITICAL RULES:
             test_date=meta_dict.get("test_date", "01/08/2026"),
             product_name=meta_dict.get("product_name", "Planetary Gear Reducer"),
             weight=meta_dict.get("weight", "-"),
-            started_at=cls._normalize_time(meta_dict.get("started_at", "10:00 AM")),
-            direction_changed_at=cls._normalize_time(meta_dict.get("direction_changed_at", "01:30 PM")),
+            started_at=cls._normalize_time(meta_dict.get("started_at", "10:00 am")),
+            direction_changed_at=cls._normalize_time(meta_dict.get("direction_changed_at", "01:30 pm")),
             duration=meta_dict.get("duration", "6 hours"),
             noise_level_limit=noise_limit,
             noise_level_measured=noise_measured,
