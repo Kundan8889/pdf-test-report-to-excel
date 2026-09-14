@@ -479,13 +479,16 @@ export default function TemperatureTable({
         </div>
       </div>
 
-      {/* Exact Table Layout */}
+      {/* Exact Table Layout with Auto-Scroll on Large Datasets */}
       <div
         style={{
           overflowX: "auto",
+          overflowY: intervals.length > 7 ? "auto" : "visible",
+          maxHeight: intervals.length > 7 ? "520px" : "none",
           border: "1px solid var(--table-border)",
           borderRadius: "0.75rem",
-          boxShadow: "0 1px 4px rgba(0, 0, 0, 0.04)"
+          boxShadow: "0 1px 4px rgba(0, 0, 0, 0.04)",
+          position: "relative"
         }}
       >
         <table
@@ -496,7 +499,7 @@ export default function TemperatureTable({
             fontSize: "0.825rem",
           }}
         >
-          <thead>
+          <thead style={{ position: "sticky", top: 0, zIndex: 10 }}>
             {/* Top Tier Headers */}
             <tr
               style={{
@@ -508,6 +511,10 @@ export default function TemperatureTable({
               <th
                 rowSpan="2"
                 style={{
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 12,
+                  backgroundColor: "var(--table-head-bg)",
                   border: "1px solid var(--table-inner-border)",
                   padding: "0.6rem 0.5rem",
                   minWidth: "115px",
@@ -522,6 +529,10 @@ export default function TemperatureTable({
               <th
                 rowSpan="2"
                 style={{
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 12,
+                  backgroundColor: "var(--table-head-bg)",
                   border: "1px solid var(--table-inner-border)",
                   padding: "0.6rem 0.5rem",
                   minWidth: "90px",
@@ -538,6 +549,10 @@ export default function TemperatureTable({
                   key={idx}
                   colSpan="2"
                   style={{
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 11,
+                    backgroundColor: "var(--table-head-bg)",
                     border: "1px solid var(--table-inner-border)",
                     padding: "0.5rem 0.4rem",
                     minWidth: "140px",
@@ -552,6 +567,10 @@ export default function TemperatureTable({
               <th
                 rowSpan="2"
                 style={{
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 12,
+                  backgroundColor: "var(--table-head-bg)",
                   border: "1px solid var(--table-inner-border)",
                   padding: "0.6rem 0.5rem",
                   minWidth: "95px",
@@ -566,6 +585,10 @@ export default function TemperatureTable({
               <th
                 rowSpan="2"
                 style={{
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 12,
+                  backgroundColor: "var(--table-head-bg)",
                   border: "1px solid var(--table-inner-border)",
                   padding: "0.6rem 0.5rem",
                   minWidth: "90px",
@@ -581,6 +604,10 @@ export default function TemperatureTable({
                 <th
                   rowSpan="2"
                   style={{
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 12,
+                    backgroundColor: "var(--table-head-bg)",
                     border: "1px solid var(--table-inner-border)",
                     padding: "0.6rem 0.5rem",
                     minWidth: "95px",
@@ -596,6 +623,10 @@ export default function TemperatureTable({
               <th
                 rowSpan="2"
                 style={{
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 12,
+                  backgroundColor: "var(--table-head-bg)",
                   border: "1px solid var(--table-inner-border)",
                   padding: "0.6rem 0.4rem",
                   minWidth: "60px",
@@ -619,6 +650,10 @@ export default function TemperatureTable({
                 <React.Fragment key={i}>
                   <th
                     style={{
+                      position: "sticky",
+                      top: "35px",
+                      zIndex: 11,
+                      backgroundColor: "var(--table-subhead-bg)",
                       border: "1px solid var(--table-inner-border)",
                       padding: "0.4rem 0.25rem",
                       minWidth: "70px",
@@ -631,6 +666,9 @@ export default function TemperatureTable({
                   </th>
                   <th
                     style={{
+                      position: "sticky",
+                      top: "35px",
+                      zIndex: 11,
                       border: "1px solid var(--table-inner-border)",
                       padding: "0.4rem 0.25rem",
                       minWidth: "70px",
@@ -647,6 +685,7 @@ export default function TemperatureTable({
               ))}
             </tr>
           </thead>
+
           <tbody>
             {intervals.map((row, rIdx) => (
               <tr
