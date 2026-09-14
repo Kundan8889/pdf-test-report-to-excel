@@ -85,7 +85,7 @@ export default function TemperatureTable({
       <div
         className="card"
         style={{
-          minHeight: "180px",
+          minHeight: "200px",
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
@@ -96,7 +96,7 @@ export default function TemperatureTable({
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: "0.75rem",
+            marginBottom: "0.85rem",
             flexWrap: "wrap",
             gap: "0.5rem",
           }}
@@ -104,35 +104,28 @@ export default function TemperatureTable({
           <div>
             <div
               style={{
-                fontSize: "0.75rem",
+                fontSize: "0.725rem",
                 fontWeight: 700,
-                letterSpacing: "0.05em",
-                color: "var(--text-muted)",
+                letterSpacing: "0.08em",
+                color: "var(--brand-primary)",
                 textTransform: "uppercase",
-                marginBottom: "0.2rem",
+                marginBottom: "0.25rem",
               }}
             >
-              THERMAL MEASUREMENT MATRIX
+              STEP 2 • THERMAL MEASUREMENT MATRIX
             </div>
             <h2
               className="card-title"
-              style={{ margin: 0, fontSize: "1.05rem" }}
+              style={{ margin: 0, fontSize: "1.2rem" }}
             >
               Laboratory Temperature Rise Matrix (2-Tier Calibrated)
             </h2>
           </div>
           <span
-            className="badge"
+            className={`badge ${isUploading ? 'badge-primary' : 'badge-neutral'}`}
             style={{
-              backgroundColor: isUploading
-                ? "var(--info-box-bg)"
-                : "var(--bg-card-subtle)",
-              color: isUploading
-                ? "var(--brand-primary)"
-                : "var(--text-secondary)",
-              border: "1px solid var(--border-color)",
               fontSize: "0.75rem",
-              padding: "0.35rem 0.65rem",
+              padding: "0.35rem 0.75rem",
             }}
           >
             {isUploading
@@ -146,17 +139,18 @@ export default function TemperatureTable({
           style={{
             display: "flex",
             flexWrap: "wrap",
-            gap: "0.4rem",
-            margin: "0.75rem 0",
+            gap: "0.5rem",
+            margin: "0.85rem 0",
           }}
         >
           {channelList.map((ch, idx) => (
             <span
               key={idx}
               style={{
-                fontSize: "0.75rem",
-                padding: "0.25rem 0.5rem",
-                borderRadius: "0.25rem",
+                fontSize: "0.775rem",
+                fontWeight: 600,
+                padding: "0.3rem 0.65rem",
+                borderRadius: "0.5rem",
                 border: "1px solid var(--border-color)",
                 backgroundColor: "var(--bg-card-subtle)",
                 color: isUploading
@@ -164,12 +158,13 @@ export default function TemperatureTable({
                   : "var(--text-secondary)",
                 display: "inline-flex",
                 alignItems: "center",
-                gap: "0.3rem",
+                gap: "0.35rem",
+                boxShadow: "0 1px 2px rgba(0, 0, 0, 0.02)"
               }}
             >
               <span>{ch.label}</span>
               {isUploading && (
-                <span style={{ fontSize: "0.65rem", opacity: 0.8 }}>⟳</span>
+                <span className="spinner spinner-blue" style={{ width: '0.65rem', height: '0.65rem' }} />
               )}
             </span>
           ))}
@@ -177,24 +172,23 @@ export default function TemperatureTable({
 
         <div
           style={{
-            padding: "0.75rem",
-            borderRadius: "0.375rem",
+            padding: "1rem",
+            borderRadius: "0.65rem",
             backgroundColor: "var(--bg-card-subtle)",
             border: "1px solid var(--border-color)",
-            fontSize: "0.825rem",
+            fontSize: "0.85rem",
             color: "var(--text-secondary)",
             textAlign: "center",
           }}
         >
           {isUploading ? (
-            <span>
-              Scanning OCR layers and extracting multi-interval temperature
-              values...
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span className="spinner spinner-blue" style={{ width: '0.85rem', height: '0.85rem' }} />
+              Scanning OCR layers and extracting multi-interval temperature values...
             </span>
           ) : (
             <span>
-              Upload your laboratory PDF test report above to populate the
-              calibrated multi-interval matrix.
+              Upload your laboratory PDF test report above to populate the calibrated multi-interval matrix.
             </span>
           )}
         </div>
@@ -281,18 +275,29 @@ export default function TemperatureTable({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "0.75rem",
+          marginBottom: "1rem",
           flexWrap: "wrap",
-          gap: "0.5rem",
+          gap: "0.75rem",
         }}
       >
         <div>
-          <h2 className="card-title" style={{ margin: 0 }}>
+          <div
+            style={{
+              fontSize: "0.725rem",
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              color: "var(--brand-primary)",
+              textTransform: "uppercase",
+              marginBottom: "0.25rem",
+            }}
+          >
+            STEP 2 • THERMAL MEASUREMENT MATRIX
+          </div>
+          <h2 className="card-title" style={{ margin: 0, fontSize: "1.2rem" }}>
             Laboratory Temperature Rise Matrix ({intervals.length} Intervals)
           </h2>
-          <p style={{ color: "#64748b", fontSize: "0.85rem" }}>
-            Multi-interval thermal log (Input, Body, Body, Bearing Covers 1-5,
-            Output & Ambient).
+          <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginTop: "0.2rem" }}>
+            Multi-interval thermal log (Input, Body, Body, Bearing Covers 1-5, Output &amp; Ambient).
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
@@ -300,10 +305,10 @@ export default function TemperatureTable({
             type="button"
             className="btn btn-secondary"
             onClick={handleAddRow}
-            style={{ fontSize: "0.8rem", padding: "0.35rem 0.65rem" }}
+            style={{ fontSize: "0.8rem", padding: "0.4rem 0.75rem" }}
             title="Add a new test interval row"
           >
-            ➕ Add Interval Row
+            ➕ Add Row
           </button>
           {onResetToOriginal && (
             <button
@@ -316,11 +321,11 @@ export default function TemperatureTable({
               }}
               style={{
                 fontSize: "0.8rem",
-                padding: "0.35rem 0.65rem",
+                padding: "0.4rem 0.75rem",
                 backgroundColor: resetFeedback ? "var(--success-bg)" : "var(--bg-card-subtle)",
-                borderColor: resetFeedback ? "var(--success-text)" : "var(--border-color)",
+                borderColor: resetFeedback ? "var(--success-border)" : "var(--border-color)",
                 color: resetFeedback ? "var(--success-text)" : "var(--text-primary)",
-                fontWeight: resetFeedback ? 700 : 500,
+                fontWeight: resetFeedback ? 700 : 600,
                 transition: "all 0.2s ease"
               }}
               title="Reset table back to original extracted readings"
@@ -335,10 +340,10 @@ export default function TemperatureTable({
               onClick={onResetAll}
               style={{
                 fontSize: "0.8rem",
-                padding: "0.35rem 0.65rem",
-                backgroundColor: "var(--bg-card-subtle)",
-                borderColor: "var(--border-color)",
-                color: "var(--text-secondary)"
+                padding: "0.4rem 0.75rem",
+                backgroundColor: "var(--danger-bg)",
+                borderColor: "var(--danger-border)",
+                color: "var(--danger-text)"
               }}
               title="Clear report and upload a new PDF"
             >
@@ -350,12 +355,13 @@ export default function TemperatureTable({
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: "0.35rem",
-              padding: "0.25rem 0.55rem",
-              fontSize: "0.8rem",
+              gap: "0.4rem",
+              padding: "0.35rem 0.65rem",
+              fontSize: "0.825rem",
+              boxShadow: "0 1px 3px rgba(16, 185, 129, 0.15)"
             }}
           >
-            <span>Criteria: Temp Rise &lt;</span>
+            <span>Criteria: ΔT &lt;</span>
             <input
               type="number"
               step="1"
@@ -370,12 +376,12 @@ export default function TemperatureTable({
                 fontSize: "0.85rem",
                 color: "var(--success-text)",
                 backgroundColor: "var(--bg-card)",
-                border: "1px solid var(--success-text)",
-                borderRadius: "0.25rem",
-                padding: "0.1rem 0.2rem",
+                border: "1px solid var(--success-border)",
+                borderRadius: "0.35rem",
+                padding: "0.15rem 0.25rem",
                 outline: "none"
               }}
-              title="Click and type to change temperature rise limit (e.g. 45°C or 30°C)"
+              title="Click and type to change temperature rise limit (e.g. 40°C, 45°C or 30°C)"
             />
             <span>°C over Ambient</span>
           </div>
@@ -385,23 +391,23 @@ export default function TemperatureTable({
       {/* Noise Level & Limit Banners */}
       <div
         style={{
-          backgroundColor: "var(--info-box-bg)",
+          backgroundColor: "var(--bg-card-subtle)",
           border: "1px solid var(--border-color)",
-          borderRadius: "0.375rem",
-          padding: "0.6rem 0.85rem",
-          marginBottom: "0.75rem",
+          borderRadius: "0.65rem",
+          padding: "0.75rem 1rem",
+          marginBottom: "1rem",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
-          gap: "0.75rem",
-          fontSize: "0.85rem",
+          gap: "0.85rem",
+          fontSize: "0.875rem",
           color: "var(--text-primary)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
-            <strong>Noise Level Limit:</strong>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.85rem", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+            <span style={{ color: "var(--text-secondary)", fontWeight: 600 }}>Noise Level Limit:</span>
             <input
               type="text"
               value={metadata?.noise_level_limit || "< 85 dB"}
@@ -414,22 +420,22 @@ export default function TemperatureTable({
                 }
               }}
               style={{
-                width: "80px",
-                padding: "0.15rem 0.35rem",
-                borderRadius: "0.25rem",
+                width: "84px",
+                padding: "0.2rem 0.45rem",
+                borderRadius: "0.35rem",
                 border: "1px solid var(--border-color)",
                 fontSize: "0.85rem",
                 backgroundColor: "var(--bg-card)",
                 color: "var(--text-primary)",
-                fontWeight: 600,
+                fontWeight: 700,
                 textAlign: "center"
               }}
               title="Click and type to adjust noise limit"
             />
           </div>
-          <span>&nbsp;|&nbsp;</span>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
-            <strong>Measured Noise:</strong>
+          <span style={{ color: "var(--border-dashed)" }}>|</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+            <span style={{ color: "var(--text-secondary)", fontWeight: 600 }}>Measured Noise:</span>
             <input
               type="text"
               value={metadata?.noise_level_measured || ""}
@@ -444,23 +450,25 @@ export default function TemperatureTable({
               }}
               style={{
                 width: "95px",
-                padding: "0.15rem 0.35rem",
-                borderRadius: "0.25rem",
-                border: "1px solid var(--success-text)",
+                padding: "0.2rem 0.45rem",
+                borderRadius: "0.35rem",
+                border: "1px solid var(--success-border)",
                 fontSize: "0.85rem",
                 fontWeight: 700,
                 color: "var(--success-text)",
                 backgroundColor: "var(--bg-card)",
-                textAlign: "center"
+                textAlign: "center",
+                boxShadow: "0 0 0 2px rgba(16, 185, 129, 0.1)"
               }}
               title="Click and type to edit measured noise level"
             />
           </div>
         </div>
-        <div>
-          <strong>Acceptance Criteria:</strong>{" "}
-          {metadata?.temp_rise_limit ||
-            "Temperature rise < 40°C over ambient (after 1 hr)"}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <span style={{ color: "var(--text-secondary)", fontWeight: 600 }}>Acceptance Criteria:</span>
+          <span className="badge badge-neutral" style={{ fontWeight: 600, fontSize: '0.8rem' }}>
+            {metadata?.temp_rise_limit || "Temperature rise < 40°C over ambient (after 1 hr)"}
+          </span>
         </div>
       </div>
 
@@ -469,7 +477,8 @@ export default function TemperatureTable({
         style={{
           overflowX: "auto",
           border: "1px solid var(--table-border)",
-          borderRadius: "0.375rem",
+          borderRadius: "0.75rem",
+          boxShadow: "0 1px 4px rgba(0, 0, 0, 0.04)"
         }}
       >
         <table
@@ -492,11 +501,13 @@ export default function TemperatureTable({
               <th
                 rowSpan="2"
                 style={{
-                  border: "1px solid var(--table-border)",
-                  padding: "0.5rem",
+                  border: "1px solid var(--table-inner-border)",
+                  padding: "0.6rem 0.5rem",
                   minWidth: "115px",
                   width: "115px",
                   whiteSpace: "nowrap",
+                  fontWeight: 700,
+                  fontSize: "0.85rem"
                 }}
               >
                 Time
@@ -504,11 +515,13 @@ export default function TemperatureTable({
               <th
                 rowSpan="2"
                 style={{
-                  border: "1px solid var(--table-border)",
-                  padding: "0.5rem",
+                  border: "1px solid var(--table-inner-border)",
+                  padding: "0.6rem 0.5rem",
                   minWidth: "90px",
                   width: "90px",
                   whiteSpace: "nowrap",
+                  fontWeight: 700,
+                  fontSize: "0.85rem"
                 }}
               >
                 Direction
@@ -518,9 +531,12 @@ export default function TemperatureTable({
                   key={idx}
                   colSpan="2"
                   style={{
-                    border: "1px solid var(--table-border)",
-                    padding: "0.4rem",
+                    border: "1px solid var(--table-inner-border)",
+                    padding: "0.5rem 0.4rem",
                     minWidth: "140px",
+                    fontWeight: 700,
+                    fontSize: "0.85rem",
+                    color: "var(--text-primary)"
                   }}
                 >
                   {ch.label}
@@ -529,21 +545,26 @@ export default function TemperatureTable({
               <th
                 rowSpan="2"
                 style={{
-                  border: "1px solid var(--table-border)",
-                  padding: "0.5rem",
+                  border: "1px solid var(--table-inner-border)",
+                  padding: "0.6rem 0.5rem",
                   minWidth: "95px",
                   width: "95px",
+                  fontWeight: 700,
+                  fontSize: "0.85rem",
+                  color: "var(--brand-primary)"
                 }}
               >
-                ambient
+                Ambient (°C)
               </th>
               <th
                 rowSpan="2"
                 style={{
-                  border: "1px solid var(--table-border)",
-                  padding: "0.5rem",
+                  border: "1px solid var(--table-inner-border)",
+                  padding: "0.6rem 0.4rem",
                   minWidth: "60px",
                   width: "60px",
+                  fontWeight: 700,
+                  fontSize: "0.8rem"
                 }}
               >
                 Action
@@ -562,24 +583,28 @@ export default function TemperatureTable({
                   <th
                     style={{
                       border: "1px solid var(--table-inner-border)",
-                      padding: "0.35rem 0.2rem",
+                      padding: "0.4rem 0.25rem",
                       minWidth: "70px",
                       width: "70px",
+                      fontSize: "0.75rem",
+                      fontWeight: 600
                     }}
                   >
-                    Actual Temp
+                    Actual (°C)
                   </th>
                   <th
                     style={{
                       border: "1px solid var(--table-inner-border)",
-                      padding: "0.35rem 0.2rem",
+                      padding: "0.4rem 0.25rem",
                       minWidth: "70px",
                       width: "70px",
                       backgroundColor: "var(--table-rise-bg)",
                       color: "var(--table-rise-text)",
+                      fontSize: "0.75rem",
+                      fontWeight: 700
                     }}
                   >
-                    Temp Rise
+                    ΔT Rise (°C)
                   </th>
                 </React.Fragment>
               ))}
@@ -589,6 +614,7 @@ export default function TemperatureTable({
             {intervals.map((row, rIdx) => (
               <tr
                 key={rIdx}
+                className="table-data-row"
                 style={{
                   backgroundColor:
                     rIdx % 2 === 0
@@ -610,6 +636,7 @@ export default function TemperatureTable({
                 >
                   <input
                     type="text"
+                    className="table-input-field"
                     value={row.time_label || ''}
                     title={row.time_label}
                     placeholder="10:00 AM"
@@ -622,15 +649,7 @@ export default function TemperatureTable({
                       onIntervalsChange(updated);
                     }}
                     style={{
-                      width: "100%",
-                      textAlign: "center",
-                      border: "1px solid transparent",
-                      borderRadius: "0.25rem",
-                      padding: "0.2rem 0.3rem",
-                      color: "var(--text-primary)",
-                      backgroundColor: "transparent",
                       fontWeight: 700,
-                      fontSize: "0.85rem",
                     }}
                   />
                 </td>
@@ -648,6 +667,7 @@ export default function TemperatureTable({
                 >
                   <input
                     type="text"
+                    className="table-input-field"
                     value={row.direction || ''}
                     title={row.direction}
                     placeholder="CW"
@@ -660,15 +680,7 @@ export default function TemperatureTable({
                       onIntervalsChange(updated);
                     }}
                     style={{
-                      width: "100%",
-                      textAlign: "center",
-                      border: "1px solid transparent",
-                      borderRadius: "0.25rem",
-                      padding: "0.2rem 0.3rem",
-                      color: "var(--text-primary)",
-                      backgroundColor: "transparent",
                       fontWeight: 700,
-                      fontSize: "0.85rem",
                     }}
                   />
                 </td>
@@ -690,6 +702,7 @@ export default function TemperatureTable({
                       >
                         <input
                           type="text"
+                          className="table-input-field"
                           value={displayAct}
                           onChange={(e) =>
                             handleCellChange(rIdx, ch.actKey, e.target.value)
@@ -700,21 +713,13 @@ export default function TemperatureTable({
                               handleCellChange(rIdx, ch.actKey, parseFloat(num.toFixed(1)));
                             }
                           }}
-                          style={{
-                            width: "100%",
-                            textAlign: "center",
-                            border: "1px solid transparent",
-                            padding: "0.15rem",
-                            color: "var(--text-primary)",
-                            backgroundColor: "transparent",
-                          }}
                         />
                       </td>
                       <td
                         style={{
                           border: "1px solid var(--table-inner-border)",
                           padding: "0.25rem",
-                          fontWeight: 600,
+                          fontWeight: 700,
                           color:
                             riseVal > thresholdLimit
                               ? "var(--danger-text)"
@@ -737,6 +742,7 @@ export default function TemperatureTable({
                 >
                   <input
                     type="text"
+                    className="table-input-field"
                     value={row.ambient !== "" && row.ambient !== undefined && row.ambient !== null ? (typeof row.ambient === "number" ? row.ambient.toFixed(1) : row.ambient) : ""}
                     onChange={(e) =>
                       handleCellChange(rIdx, "ambient", e.target.value)
@@ -748,14 +754,11 @@ export default function TemperatureTable({
                       }
                     }}
                     style={{
-                      width: "100%",
-                      textAlign: "center",
-                      fontWeight: 600,
+                      fontWeight: 700,
                       color: "var(--brand-primary)",
-                      border: "1px solid var(--table-inner-border)",
-                      borderRadius: "0.25rem",
-                      padding: "0.15rem",
                       backgroundColor: "var(--bg-card)",
+                      border: "1px solid var(--border-color)",
+                      borderRadius: "0.35rem"
                     }}
                   />
                 </td>
@@ -776,9 +779,13 @@ export default function TemperatureTable({
                       border: "none",
                       background: "transparent",
                       cursor: intervals.length <= 1 ? "not-allowed" : "pointer",
-                      opacity: intervals.length <= 1 ? 0.3 : 0.8,
-                      fontSize: "0.85rem",
+                      opacity: intervals.length <= 1 ? 0.3 : 0.75,
+                      fontSize: "0.9rem",
+                      transition: "transform 0.15s ease, opacity 0.15s ease",
+                      padding: "0.2rem"
                     }}
+                    onMouseEnter={(e) => { if (intervals.length > 1) e.currentTarget.style.opacity = '1'; }}
+                    onMouseLeave={(e) => { if (intervals.length > 1) e.currentTarget.style.opacity = '0.75'; }}
                   >
                     🗑️
                   </button>
@@ -797,10 +804,11 @@ export default function TemperatureTable({
                 colSpan="2"
                 style={{
                   border: "1px solid var(--table-inner-border)",
-                  padding: "0.45rem 0.6rem",
+                  padding: "0.6rem 0.85rem",
                   fontWeight: 700,
                   textAlign: "left",
                   color: "var(--text-primary)",
+                  fontSize: "0.85rem"
                 }}
               >
                 Lubrication leakage
@@ -809,13 +817,16 @@ export default function TemperatureTable({
                 colSpan={dynamicChannelList.length * 2 + 2}
                 style={{
                   border: "1px solid var(--table-inner-border)",
-                  padding: "0.45rem",
-                  fontWeight: 600,
+                  padding: "0.6rem 0.85rem",
+                  fontWeight: 700,
                   color: "var(--success-text)",
                   textAlign: "center",
+                  fontSize: "0.85rem"
                 }}
               >
-                {metadata?.lubrication_leakage || "No leakage"}
+                <span className="badge badge-success" style={{ fontSize: '0.8rem', padding: '0.3rem 0.75rem' }}>
+                  ✓ {metadata?.lubrication_leakage || "No leakage observed during full test duration"}
+                </span>
               </td>
             </tr>
           </tbody>

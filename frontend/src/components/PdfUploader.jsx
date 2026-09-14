@@ -42,39 +42,35 @@ export default function PdfUploader({ onFileSelected, onFileUpload, isUploading 
 
   return (
     <div
-      className="card enterprise-workflow-card"
+      className="card card-interactive"
       style={{
-        minHeight: '235px',
+        minHeight: '240px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
         backgroundColor: 'var(--bg-card)',
         borderColor: 'var(--border-color)',
-        padding: '1.25rem 1.5rem',
-        marginBottom: '1.5rem',
-        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.08)'
+        padding: '1.5rem',
+        marginBottom: '1.5rem'
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
         <div>
-          <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.2rem' }}>
-            DOCUMENT INTAKE & EXTRACTION
+          <div style={{ fontSize: '0.725rem', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--brand-primary)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
+            STEP 1 • DOCUMENT INTAKE
           </div>
-          <h2 className="card-title" style={{ margin: 0, fontSize: '1.05rem' }}>
+          <h2 className="card-title" style={{ margin: 0, fontSize: '1.2rem' }}>
             Upload Laboratory PDF Test Report
           </h2>
         </div>
         <span
-          className="badge"
+          className="badge badge-primary"
           style={{
-            backgroundColor: 'var(--bg-card-subtle)',
-            color: 'var(--text-secondary)',
-            border: '1px solid var(--border-color)',
             fontSize: '0.75rem',
-            padding: '0.35rem 0.65rem'
+            padding: '0.35rem 0.75rem'
           }}
         >
-          Supported: Scanned / Native PDF
+          📄 Auto-Extracts Multi-Channel Matrix
         </span>
       </div>
 
@@ -102,24 +98,42 @@ export default function PdfUploader({ onFileSelected, onFileUpload, isUploading 
           alignItems: 'center',
           justifyContent: 'center',
           border: `2px dashed ${dragOver ? 'var(--brand-primary)' : 'var(--border-dashed)'}`,
-          borderRadius: '0.5rem',
-          padding: '1.5rem 1rem',
+          borderRadius: '0.85rem',
+          padding: '2rem 1.25rem',
           textAlign: 'center',
-          backgroundColor: dragOver ? 'var(--info-box-bg)' : 'var(--bg-card-subtle)',
-          cursor: 'pointer',
-          transition: 'all 0.2s ease',
-          minHeight: '130px'
+          backgroundColor: dragOver ? 'var(--brand-light)' : 'var(--bg-card-subtle)',
+          cursor: isUploading ? 'not-allowed' : 'pointer',
+          transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+          boxShadow: dragOver ? '0 0 0 4px rgba(59, 130, 246, 0.15)' : 'none',
+          minHeight: '140px'
         }}
       >
-        <div style={{ fontSize: '2rem', marginBottom: '0.35rem' }}>📄</div>
-        <p style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem', margin: 0 }}>
+        <div
+          style={{
+            width: '56px',
+            height: '56px',
+            borderRadius: '50%',
+            background: 'var(--brand-light)',
+            border: '1px solid rgba(59, 130, 246, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '1.6rem',
+            marginBottom: '0.75rem',
+            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.15)'
+          }}
+        >
+          📂
+        </div>
+        <p style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '1rem', margin: 0, letterSpacing: '-0.01em' }}>
           Click to browse or drag & drop thermal test report (.pdf)
         </p>
-        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-          Automatically extracts test parameters, channels (Input, Body, BC 1–5, Output, Ambient) and multi-tier interval matrix
+        <p style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', marginTop: '0.35rem', maxWidth: '560px' }}>
+          Instantly recognizes title block, test duration, serials, and calibrated temperature channels with automatic ΔT rise calculation.
         </p>
       </div>
     </div>
   );
 }
+
 

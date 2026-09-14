@@ -8,52 +8,65 @@ export default function DownloadButton({
   isGeneratingWord
 }) {
   return (
-    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center', flexWrap: 'wrap' }}>
       {/* Excel Download Button */}
       <button
         type="button"
-        className="btn btn-primary"
+        className="btn btn-excel"
         disabled={!isReady || isGenerating || isGeneratingWord}
         onClick={onDownload}
         style={{
-          padding: '0.65rem 1.15rem',
+          padding: '0.65rem 1.25rem',
           fontSize: '0.92rem',
-          fontWeight: 600,
-          boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)'
+          fontWeight: 700
         }}
-        title="Download spreadsheet in Excel (.xlsx) format"
+        title="Download spreadsheet in Excel (.xlsx) format with formula calculations"
       >
-        {isGenerating ? '⏳ Generating Excel...' : '📊 Download Excel (.xlsx)'}
+        {isGenerating ? (
+          <>
+            <span className="spinner" style={{ width: '0.9rem', height: '0.9rem' }} />
+            <span>Generating Excel...</span>
+          </>
+        ) : (
+          <>
+            <span style={{ fontSize: '1.05rem' }}>📊</span>
+            <span>Download Excel (.xlsx)</span>
+          </>
+        )}
       </button>
 
       {/* Word Document Download Button */}
       <button
         type="button"
-        className="btn btn-secondary"
+        className="btn btn-word"
         disabled={!isReady || isGenerating || isGeneratingWord}
         onClick={onDownloadWord}
         style={{
-          padding: '0.65rem 1.15rem',
+          padding: '0.65rem 1.25rem',
           fontSize: '0.92rem',
-          fontWeight: 600,
-          backgroundColor: 'var(--brand-primary)',
-          color: '#ffffff',
-          borderColor: 'var(--brand-primary)',
-          boxShadow: '0 2px 4px rgba(30, 58, 138, 0.25)',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.35rem'
+          fontWeight: 700
         }}
-        title="Download print-ready A4 Landscape Microsoft Word (.docx) document"
+        title="Download print-ready A4 Landscape Microsoft Word (.docx) report"
       >
-        {isGeneratingWord ? '⏳ Generating Word...' : '📄 Download Word (.docx) [A4 Fit]'}
+        {isGeneratingWord ? (
+          <>
+            <span className="spinner" style={{ width: '0.9rem', height: '0.9rem' }} />
+            <span>Generating Word...</span>
+          </>
+        ) : (
+          <>
+            <span style={{ fontSize: '1.05rem' }}>📄</span>
+            <span>Download Word (.docx)</span>
+          </>
+        )}
       </button>
 
       {!isReady && (
-        <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-          (Upload report to enable export)
+        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+          (Upload report to export)
         </span>
       )}
     </div>
   );
 }
+

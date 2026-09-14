@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from 'react';
+import React, { useEffect } from 'react';
 
 export default function ConfirmModal({
   isOpen,
@@ -35,9 +35,10 @@ export default function ConfirmModal({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.65)',
-        backdropFilter: 'blur(4px)',
-        padding: '1rem',
+        backgroundColor: 'rgba(9, 13, 22, 0.7)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        padding: '1.25rem',
         animation: 'fadeIn 0.2s ease-out'
       }}
       onClick={onCancel}
@@ -45,35 +46,46 @@ export default function ConfirmModal({
       <div
         style={{
           width: '100%',
-          maxWidth: '460px',
+          maxWidth: '480px',
           backgroundColor: 'var(--bg-card)',
-          borderRadius: '0.85rem',
+          borderRadius: '1.25rem',
           border: '1px solid var(--border-color)',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+          boxShadow: 'var(--modal-shadow)',
           overflow: 'hidden',
-          animation: 'scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+          animation: 'scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
         }}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
       >
-        {/* Modal Header & Icon */}
-        <div style={{ padding: '1.5rem 1.5rem 1rem 1.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
+        {/* Modal Top Accent Line */}
+        <div
+          style={{
+            height: '4px',
+            width: '100%',
+            background: isDanger ? 'var(--danger-gradient)' : 'var(--brand-gradient)'
+          }}
+        />
+
+        {/* Modal Content */}
+        <div style={{ padding: '1.75rem 1.75rem 1.25rem 1.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.15rem' }}>
+            {/* Animated / Glowing Icon Container */}
             <div
               style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '50%',
+                width: '48px',
+                height: '48px',
+                borderRadius: '1rem',
                 backgroundColor: isDanger ? 'var(--danger-bg)' : 'var(--warning-bg)',
                 color: isDanger ? 'var(--danger-text)' : 'var(--warning-text)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '1.35rem',
+                fontSize: '1.4rem',
                 flexShrink: 0,
-                border: `1px solid ${isDanger ? 'rgba(220, 38, 38, 0.2)' : 'rgba(217, 119, 6, 0.2)'}`
+                border: `1px solid ${isDanger ? 'var(--danger-border)' : 'var(--warning-border)'}`,
+                boxShadow: isDanger ? '0 4px 12px rgba(239, 68, 68, 0.15)' : '0 4px 12px rgba(245, 158, 11, 0.15)'
               }}
             >
               {isDanger ? '🗑️' : '⚠️'}
@@ -84,53 +96,57 @@ export default function ConfirmModal({
                 id="modal-title"
                 style={{
                   margin: 0,
-                  fontSize: '1.15rem',
+                  fontSize: '1.2rem',
                   fontWeight: 700,
                   color: 'var(--text-primary)',
-                  letterSpacing: '-0.01em'
+                  letterSpacing: '-0.02em'
                 }}
               >
                 {title}
               </h3>
               <p
                 style={{
-                  margin: '0.5rem 0 0 0',
-                  fontSize: '0.875rem',
+                  margin: '0.6rem 0 0 0',
+                  fontSize: '0.9rem',
                   color: 'var(--text-secondary)',
-                  lineHeight: 1.5
+                  lineHeight: 1.55
                 }}
               >
                 {message}
               </p>
             </div>
           </div>
+
+          {/* Info Note Pill */}
+          <div
+            style={{
+              marginTop: '1.25rem',
+              padding: '0.75rem 1rem',
+              backgroundColor: 'var(--bg-card-subtle)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '0.65rem',
+              fontSize: '0.8rem',
+              color: 'var(--text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            <span style={{ fontSize: '1rem' }}>ℹ️</span>
+            <span>You will return to the upload screen to process a new report.</span>
+          </div>
         </div>
 
-        {/* Modal Info Note */}
+        {/* Modal Action Buttons Footer */}
         <div
           style={{
-            margin: '0 1.5rem 1.25rem 1.5rem',
-            padding: '0.65rem 0.85rem',
-            backgroundColor: 'var(--bg-card-subtle)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '0.5rem',
-            fontSize: '0.785rem',
-            color: 'var(--text-muted)'
-          }}
-        >
-          ℹ️ <strong>Note:</strong> You will be returned to the PDF upload screen to process a new report.
-        </div>
-
-        {/* Modal Action Buttons */}
-        <div
-          style={{
-            padding: '0.85rem 1.5rem',
+            padding: '1rem 1.75rem',
             backgroundColor: 'var(--bg-card-subtle)',
             borderTop: '1px solid var(--border-color)',
             display: 'flex',
             justifyContent: 'flex-end',
             alignItems: 'center',
-            gap: '0.75rem'
+            gap: '0.85rem'
           }}
         >
           <button
@@ -138,7 +154,7 @@ export default function ConfirmModal({
             className="btn btn-secondary"
             onClick={onCancel}
             style={{
-              padding: '0.55rem 1.15rem',
+              padding: '0.6rem 1.25rem',
               fontSize: '0.875rem',
               fontWeight: 600
             }}
@@ -148,16 +164,12 @@ export default function ConfirmModal({
 
           <button
             type="button"
-            className="btn"
+            className={`btn ${isDanger ? 'btn-danger' : 'btn-primary'}`}
             onClick={onConfirm}
             style={{
-              padding: '0.55rem 1.25rem',
+              padding: '0.6rem 1.35rem',
               fontSize: '0.875rem',
-              fontWeight: 600,
-              color: '#ffffff',
-              backgroundColor: isDanger ? '#dc2626' : 'var(--brand-primary)',
-              border: `1px solid ${isDanger ? '#b91c1c' : 'var(--brand-hover)'}`,
-              boxShadow: isDanger ? '0 2px 4px rgba(220, 38, 38, 0.25)' : 'none'
+              fontWeight: 600
             }}
           >
             {confirmLabel}
@@ -167,3 +179,4 @@ export default function ConfirmModal({
     </div>
   );
 }
+

@@ -325,12 +325,26 @@ export default function Home() {
 
   return (
     <div className="app-container">
-      <header className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+      <header className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.25rem' }}>
         <div>
-          <h1 style={{ margin: 0 }}>PDF Test Report to Excel & Word</h1>
-          <p style={{ margin: '0.25rem 0 0 0' }}>Convert laboratory thermal & temperature rise test reports into structured Excel & Word documents</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <h1 className="header-title-gradient" style={{ margin: 0 }}>
+              PDF Test Report to Excel &amp; Word
+            </h1>
+            <div
+              className={`badge ${isServerOnline ? 'badge-success' : 'badge-danger'}`}
+              style={{ padding: '0.25rem 0.65rem', fontSize: '0.75rem' }}
+            >
+              <span className={isServerOnline ? 'pulse-indicator' : ''} />
+              <span>{isServerOnline ? 'FastAPI Engine Live' : 'Backend Offline'}</span>
+            </div>
+          </div>
+          <p style={{ color: 'var(--text-secondary)', margin: '0.35rem 0 0 0', fontSize: '0.95rem' }}>
+            Convert laboratory thermal &amp; temperature rise test reports into structured Excel (.xlsx) &amp; Word (.docx) documents
+          </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <button
             type="button"
             className="theme-toggle-btn"
@@ -338,19 +352,29 @@ export default function Home() {
             aria-label="Toggle theme"
             title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
           >
-            {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
+            {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
           </button>
-          <img
-            src={logo}
-            alt="MAGTORQ Logo"
+          <div
             style={{
-              height: '44px',
-              maxWidth: '180px',
-              objectFit: 'contain',
-              display: 'block',
-              filter: 'var(--logo-filter)'
+              padding: '0.45rem 0.85rem',
+              borderRadius: '0.75rem',
+              backgroundColor: 'var(--bg-card)',
+              border: '1px solid var(--border-color)',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)'
             }}
-          />
+          >
+            <img
+              src={logo}
+              alt="MAGTORQ Logo"
+              style={{
+                height: '40px',
+                maxWidth: '160px',
+                objectFit: 'contain',
+                display: 'block',
+                filter: 'var(--logo-filter)'
+              }}
+            />
+          </div>
         </div>
       </header>
 
@@ -376,8 +400,17 @@ export default function Home() {
 
         {/* Global Error Banner */}
         {errorMessage && (
-          <div className="card" style={{ borderLeft: '4px solid var(--danger-color)', backgroundColor: 'var(--danger-bg)' }}>
-            <h3 style={{ color: 'var(--danger-text)', margin: '0 0 0.5rem 0' }}>⚠️ System Notice</h3>
+          <div
+            className="card"
+            style={{
+              borderLeft: '4px solid var(--danger-text)',
+              backgroundColor: 'var(--danger-bg)',
+              borderColor: 'var(--danger-border)'
+            }}
+          >
+            <h3 style={{ color: 'var(--danger-text)', margin: '0 0 0.5rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span>⚠️</span> System Notice
+            </h3>
             <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{errorMessage}</p>
           </div>
         )}
@@ -398,7 +431,7 @@ export default function Home() {
           <ValidationWarning warnings={warnings} />
         )}
 
-        {/* Step 4: Actions & Export Footer */}
+        {/* Step 3: Actions & Export Footer Banner */}
         <div
           className="card"
           style={{
@@ -406,29 +439,55 @@ export default function Home() {
             justifyContent: 'space-between',
             alignItems: 'center',
             flexWrap: 'wrap',
-            gap: '1rem',
-            backgroundColor: 'var(--bg-card-subtle)',
-            borderColor: 'var(--border-color)'
+            gap: '1.25rem',
+            backgroundColor: 'var(--bg-card)',
+            borderColor: isReadyForExport ? 'var(--border-focus)' : 'var(--border-color)',
+            boxShadow: isReadyForExport ? '0 4px 20px rgba(37, 99, 235, 0.08)' : 'var(--card-shadow)',
+            padding: '1.5rem'
           }}
         >
+          {/* Top subtle highlight line when ready */}
+          {isReadyForExport && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '3px',
+                background: 'var(--brand-gradient)'
+              }}
+            />
+          )}
+
           <div>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-              {isReadyForExport ? 'Ready to Export Excel & Word Report' : 'Awaiting Report Extraction'}
-            </h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.015em' }}>
+                {isReadyForExport ? 'STEP 3 • Ready to Export Excel & Word Reports' : 'STEP 3 • Awaiting Report Extraction'}
+              </h3>
+              {isReadyForExport && (
+                <span className="badge badge-success" style={{ fontSize: '0.75rem' }}>
+                  ✓ Ready
+                </span>
+              )}
+            </div>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0, maxWidth: '640px' }}>
               Generates calibrated .xlsx &amp; .docx with exact 2-tier matrix headers, ΔT rise formulas, noise checks, and compliance status.
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
             {metadata && (
               <button
                 type="button"
                 className="btn btn-secondary"
                 onClick={handleResetAll}
                 style={{
-                  borderColor: 'var(--danger-color)',
-                  color: 'var(--danger-color)',
-                  backgroundColor: 'transparent'
+                  borderColor: 'var(--danger-border)',
+                  color: 'var(--danger-text)',
+                  backgroundColor: 'var(--danger-bg)',
+                  fontSize: '0.875rem',
+                  fontWeight: 600
                 }}
                 title="Reset document and all extracted data"
               >
@@ -460,3 +519,4 @@ export default function Home() {
     </div>
   );
 }
+
