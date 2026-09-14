@@ -35,55 +35,56 @@ class PDFService:
         except Exception as e:
             print(f"pdfplumber reading error: {e}")
 
-        # Fallback & image extraction via pypdf (only page 1)
+        # 1. Render Full Complete Page 1 as high-res image (via pypdfium2 or pdfplumber)
+        page_img_bytes = None
         try:
-            reader = pypdf.PdfReader(file_path)
-            page_count = len(reader.pages)
-            for page in reader.pages[:1]:
-                if not extracted_text:
-                    t = page.extract_text() or ""
-                    if t.strip():
-                        extracted_text.append(t)
-                for img in page.images:
-                    images.append(img)
+            import pypdfium2 as pdfium
+            import io
+            pdf = pdfium.PdfDocument(str(file_path))
+            page_count = len(pdf)
+            if page_count > 0:
+                p0 = pdf[0]
+                pil_img = p0.render(scale=1.5).to_pil()
+                if pil_img.mode != "RGB":
+                    pil_img = pil_img.convert("RGB")
+                buf = io.BytesIO()
+                pil_img.save(buf, format="JPEG", quality=85, optimize=True)
+                page_img_bytes = buf.getvalue()
         except Exception as e:
-            print(f"pypdf image extraction error: {e}")
+            print(f"pypdfium2 rendering error: {e}")
 
-        # High-Speed Page 1 image rendering via pypdfium2
-        if not images:
-            try:
-                import pypdfium2 as pdfium
-                import io
-                pdf = pdfium.PdfDocument(str(file_path))
-                page_count = len(pdf)
-                if page_count > 0:
-                    p0 = pdf[0]
-                    pil_img = p0.render(scale=1.5).to_pil()
-                    buf = io.BytesIO()
-                    pil_img.save(buf, format="JPEG", quality=85)
-                    class SimpleImg:
-                        def __init__(self, d):
-                            self.data = d
-                    images.append(SimpleImg(buf.getvalue()))
-            except Exception as e:
-                print(f"pypdfium2 rendering error: {e}")
-
-        # Fallback: if no images found, rasterize Page 1 via pdfplumber
-        if not images:
+        if not page_img_bytes:
             try:
                 with pdfplumber.open(file_path) as pdf:
+                    page_count = len(pdf.pages)
                     if pdf.pages:
                         p0 = pdf.pages[0]
                         pil_img = p0.to_image(resolution=150).original
+                        if pil_img.mode != "RGB":
+                            pil_img = pil_img.convert("RGB")
                         import io
                         buf = io.BytesIO()
-                        pil_img.save(buf, format="PNG")
-                        class SimpleImg:
-                            def __init__(self, d):
-                                self.data = d
-                        images.append(SimpleImg(buf.getvalue()))
+                        pil_img.save(buf, format="JPEG", quality=85, optimize=True)
+                        page_img_bytes = buf.getvalue()
             except Exception as e:
-                print(f"Fallback page rasterization error: {e}")
+                print(f"pdfplumber rasterization error: {e}")
+
+        if page_img_bytes:
+            class PageImage:
+                def __init__(self, d):
+                    self.data = d
+            images.append(PageImage(page_img_bytes))
+
+        # Fallback to pypdf embedded image objects only if page rendering failed
+        if not images:
+            try:
+                reader = pypdf.PdfReader(file_path)
+                page_count = len(reader.pages)
+                for page in reader.pages[:1]:
+                    for img in page.images:
+                        images.append(img)
+            except Exception as e:
+                print(f"pypdf fallback error: {e}")
 
         combined_text = "\n".join(extracted_text)
         return {

@@ -9,11 +9,25 @@ from app.models.schemas import TestMetadata, TimeIntervalReading
 class GeminiService:
     @classmethod
     def get_api_key(cls) -> Optional[str]:
-        """Fetches GEMINI_API_KEY_MAGTORQ from environment."""
+        """Fetches GEMINI_API_KEY_MAGTORQ or GEMINI_API_KEY from environment or .env files."""
         key = (
             os.getenv("GEMINI_API_KEY_MAGTORQ", "").strip()
             or os.getenv("GEMINI_API_KEY", "").strip()
         )
+        if not key:
+            from pathlib import Path
+            from dotenv import dotenv_values
+            curr = Path(__file__).resolve().parent
+            for _ in range(4):
+                env_file = curr / ".env"
+                if env_file.exists():
+                    vals = dotenv_values(env_file)
+                    k = vals.get("GEMINI_API_KEY_MAGTORQ", "").strip() or vals.get("GEMINI_API_KEY", "").strip()
+                    if k:
+                        key = k
+                        os.environ["GEMINI_API_KEY_MAGTORQ"] = k
+                        break
+                curr = curr.parent
         return key if key else None
 
     @classmethod
