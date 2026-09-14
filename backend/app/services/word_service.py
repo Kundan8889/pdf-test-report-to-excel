@@ -98,8 +98,8 @@ class WordService:
         col_widths.append(Inches(0.663))
 
         # Calculate total rows required:
-        # Title (1) + Info (4) + Noise (1) + Temp Limit (1) + Table Header (2) + Intervals (N) + Lubrication (1)
-        num_rows = 1 + 4 + 1 + 1 + 2 + len(intervals) + 1
+        # Title (1) + Info with Noise (5) + Temp Limit (1) + Table Header (2) + Intervals (N) + Lubrication (1)
+        num_rows = 1 + 5 + 1 + 2 + len(intervals) + 1
         table = doc.add_table(rows=num_rows, cols=total_cols)
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
         table.autofit = False
@@ -137,60 +137,47 @@ class WordService:
         format_cell(title_cell, metadata.test_name or "GEARBOX / MOTOR TEMPERATURE RISE TEST REPORT", bold=True, color_rgb=(0xFF, 0xFF, 0xFF), bg_color="1E3A8A", align=WD_ALIGN_PARAGRAPH.CENTER, font_size=12.0)
         current_row_idx += 1
 
-        # 2. Info Block (Rows 1 to 4)
+        # 2. Info Block (Rows 1 to 5)
         serial_val = metadata.serial_number or metadata.report_number or ""
         info_pairs = [
             ("Serial / Report No:", serial_val, "Date of Test:", metadata.test_date),
             ("Product / Assembly:", metadata.product_name, "Weight:", metadata.weight),
             ("Started At:", metadata.started_at, "Direction Changed At:", metadata.direction_changed_at),
             ("Test Duration:", metadata.duration, "Conclusion:", metadata.conclusion),
+            ("Noise Level Limit:", metadata.noise_level_limit or "< 85 dB", "Measured Noise:", metadata.noise_level_measured or "-"),
         ]
         mid_split = max(1, total_cols // 2)
         for k1, v1, k2, v2 in info_pairs:
-            # k1 (Cols 0 to 2)
+            # k1 (Cols 0 to min(2, mid_split-2))
             c_k1 = table.cell(current_row_idx, 0)
             c_k1.merge(table.cell(current_row_idx, min(2, mid_split - 2)))
             format_cell(c_k1, k1, bold=True, bg_color="E2E8F0", font_size=8.0)
 
-            # v1 (Cols 3 to mid_split-1)
+            # v1 (Cols min(3, mid_split-1) to mid_split-1)
             c_v1 = table.cell(current_row_idx, min(3, mid_split - 1))
             c_v1.merge(table.cell(current_row_idx, mid_split - 1))
             format_cell(c_v1, v1, bold=False, font_size=8.0)
 
-            # k2 (Cols mid_split to mid_split+2)
+            # k2 (Cols mid_split to min(mid_split+2, total_cols-2))
             c_k2 = table.cell(current_row_idx, mid_split)
             c_k2.merge(table.cell(current_row_idx, min(mid_split + 2, total_cols - 2)))
             format_cell(c_k2, k2, bold=True, bg_color="E2E8F0", font_size=8.0)
 
-            # v2 (Cols mid_split+3 to total_cols-1)
+            # v2 (Cols min(mid_split+3, total_cols-1) to total_cols-1)
             c_v2 = table.cell(current_row_idx, min(mid_split + 3, total_cols - 1))
             c_v2.merge(table.cell(current_row_idx, total_cols - 1))
             format_cell(c_v2, v2, bold=False, font_size=8.0)
 
             current_row_idx += 1
 
-        # 3. Noise Level (Row 5)
-        c_n1 = table.cell(current_row_idx, 0)
-        c_n1.merge(table.cell(current_row_idx, min(2, mid_split - 2)))
-        format_cell(c_n1, "Noise level", bold=True, font_size=8.0)
-
-        c_n2 = table.cell(current_row_idx, min(3, mid_split - 1))
-        c_n2.merge(table.cell(current_row_idx, mid_split - 1))
-        format_cell(c_n2, metadata.noise_level_limit or "< 85 dB", font_size=8.0)
-
-        c_n3 = table.cell(current_row_idx, mid_split)
-        c_n3.merge(table.cell(current_row_idx, total_cols - 1))
-        format_cell(c_n3, metadata.noise_level_measured or "74.5 dB (1/2 hour)", bold=True, align=WD_ALIGN_PARAGRAPH.RIGHT, font_size=8.0)
-        current_row_idx += 1
-
-        # 4. Temp Rise Limit (Row 6)
+        # 3. Temp Rise Limit (Row 6)
         c_tlim = table.cell(current_row_idx, 0)
         for c in range(1, total_cols):
             c_tlim.merge(table.cell(current_row_idx, c))
         format_cell(c_tlim, f"Temperature rise {metadata.temp_rise_limit or '< 40°C over the ambient ( after 1hour )'}", bold=True, bg_color="E2E8F0", font_size=8.0)
         current_row_idx += 1
 
-        # 5. Two-Tier Headers (Rows 7 & 8)
+        # 4. Two-Tier Headers (Rows 7 & 8)
         head_row1 = current_row_idx
         head_row2 = current_row_idx + 1
 

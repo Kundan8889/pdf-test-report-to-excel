@@ -63,15 +63,17 @@ class ExcelService:
         ws["A1"].alignment = ALIGN_CENTER
         ws.row_dimensions[1].height = 26
 
-        # 2. General Info Box (Rows 3-6)
+        # 2. General Info Box (Rows 3-7)
         serial_val = metadata.serial_number or metadata.report_number or ""
         info_pairs = [
             ("Serial / Report No:", serial_val, "Date of Test:", metadata.test_date),
             ("Product / Assembly:", metadata.product_name, "Weight:", metadata.weight),
             ("Started At:", metadata.started_at, "Direction Changed At:", metadata.direction_changed_at),
             ("Test Duration:", metadata.duration, "Conclusion:", metadata.conclusion),
+            ("Noise Level Limit:", metadata.noise_level_limit or "< 85 dB", "Measured Noise:", metadata.noise_level_measured or "-"),
         ]
         mid_split = max(4, total_cols // 2)
+        current_row = 3
         for idx, (k1, v1, k2, v2) in enumerate(info_pairs, start=3):
             ws.row_dimensions[idx].height = 20
             # Left block: k1 (Cols 1-2), v1 (Cols 3 to mid_split)
@@ -100,42 +102,25 @@ class ExcelService:
 
             for c in range(1, total_cols + 1):
                 ws.cell(row=idx, column=c).border = BORDER_ALL
+            current_row = idx + 1
 
-        # 3. Noise Level & Acceptance Criteria (Rows 8-9)
-        ws.row_dimensions[8].height = 20
-        ws.merge_cells(start_row=8, start_column=1, end_row=8, end_column=2)
-        ws["A8"] = "Noise level"
-        ws["A8"].font = FONT_BOLD
-        ws["A8"].alignment = ALIGN_LEFT
-        ws["A8"].border = BORDER_ALL
+        # 3. Acceptance Criteria Banner (Row 8)
+        current_row += 1
+        temp_limit_row = current_row
+        ws.row_dimensions[temp_limit_row].height = 20
+        ws.merge_cells(start_row=temp_limit_row, start_column=1, end_row=temp_limit_row, end_column=total_cols)
+        ws.cell(row=temp_limit_row, column=1, value=f"Temperature rise {metadata.temp_rise_limit or '< 40°C over the ambient ( after 1hour )'}").font = FONT_BOLD
+        ws.cell(row=temp_limit_row, column=1).fill = GRAY_HEADER_FILL
+        ws.cell(row=temp_limit_row, column=1).alignment = ALIGN_LEFT
 
-        ws.merge_cells(start_row=8, start_column=3, end_row=8, end_column=mid_split)
-        cell_nlim = ws.cell(row=8, column=3, value=metadata.noise_level_limit)
-        cell_nlim.font = FONT_REGULAR
-        cell_nlim.alignment = ALIGN_LEFT
-        cell_nlim.border = BORDER_ALL
+        for c in range(1, total_cols + 1):
+            ws.cell(row=temp_limit_row, column=c).border = BORDER_ALL
 
-        ws.merge_cells(start_row=8, start_column=mid_split + 1, end_row=8, end_column=total_cols)
-        c_nmeas = ws.cell(row=8, column=mid_split + 1, value=metadata.noise_level_measured)
-        c_nmeas.font = FONT_BOLD
-        c_nmeas.alignment = ALIGN_RIGHT
-        c_nmeas.border = BORDER_ALL
-
-        ws.row_dimensions[9].height = 20
-        ws.merge_cells(start_row=9, start_column=1, end_row=9, end_column=total_cols)
-        ws["A9"] = f"Temperature rise {metadata.temp_rise_limit}"
-        ws["A9"].font = FONT_BOLD
-        ws["A9"].fill = GRAY_HEADER_FILL
-        ws["A9"].alignment = ALIGN_LEFT
-        ws["A9"].border = BORDER_ALL
-
-        for r in [8, 9]:
-            for c in range(1, total_cols + 1):
-                ws.cell(row=r, column=c).border = BORDER_ALL
-
-        # 4. Two-Tier Header Matrix (Rows 10-11)
-        ws.row_dimensions[10].height = 22
-        ws.row_dimensions[11].height = 20
+        # 4. Two-Tier Header Matrix (Rows 10-11 / temp_limit_row + 1)
+        h_row1 = temp_limit_row + 1
+        h_row2 = temp_limit_row + 2
+        ws.row_dimensions[h_row1].height = 22
+        ws.row_dimensions[h_row2].height = 20
 
         components = [
             (name, 3 + i * 2, 4 + i * 2)
@@ -143,53 +128,54 @@ class ExcelService:
         ]
 
         # Col 1: Time
-        ws.merge_cells(start_row=10, start_column=1, end_row=11, end_column=1)
-        c_time_head = ws.cell(row=10, column=1, value="Time")
+        ws.merge_cells(start_row=h_row1, start_column=1, end_row=h_row2, end_column=1)
+        c_time_head = ws.cell(row=h_row1, column=1, value="Time")
         c_time_head.font = FONT_HEADER
         c_time_head.alignment = ALIGN_CENTER
         c_time_head.fill = GRAY_HEADER_FILL
 
         # Col 2: Direction
-        ws.merge_cells(start_row=10, start_column=2, end_row=11, end_column=2)
-        c_dir_head = ws.cell(row=10, column=2, value="Direction")
+        ws.merge_cells(start_row=h_row1, start_column=2, end_row=h_row2, end_column=2)
+        c_dir_head = ws.cell(row=h_row1, column=2, value="Direction")
         c_dir_head.font = FONT_HEADER
         c_dir_head.alignment = ALIGN_CENTER
         c_dir_head.fill = GRAY_HEADER_FILL
 
         for comp_name, start_c, end_c in components:
-            ws.merge_cells(start_row=10, start_column=start_c, end_row=10, end_column=end_c)
-            top_cell = ws.cell(row=10, column=start_c, value=comp_name)
+            ws.merge_cells(start_row=h_row1, start_column=start_c, end_row=h_row1, end_column=end_c)
+            top_cell = ws.cell(row=h_row1, column=start_c, value=comp_name)
             top_cell.font = FONT_HEADER
             top_cell.alignment = ALIGN_CENTER
             top_cell.fill = GRAY_HEADER_FILL
 
             # Sub headers
-            c1 = ws.cell(row=11, column=start_c, value="Actual Temp")
+            c1 = ws.cell(row=h_row2, column=start_c, value="Actual Temp")
             c1.font = FONT_SUBHEADER
             c1.alignment = ALIGN_CENTER
             c1.fill = GRAY_HEADER_FILL
 
-            c2 = ws.cell(row=11, column=end_c, value="Temp Rise")
+            c2 = ws.cell(row=h_row2, column=end_c, value="Temp Rise")
             c2.font = FONT_SUBHEADER
             c2.alignment = ALIGN_CENTER
             c2.fill = GRAY_HEADER_FILL
 
         # Ambient Col
-        ws.merge_cells(start_row=10, start_column=total_cols, end_row=11, end_column=total_cols)
-        amb_cell = ws.cell(row=10, column=total_cols, value="Ambient")
+        ws.merge_cells(start_row=h_row1, start_column=total_cols, end_row=h_row2, end_column=total_cols)
+        amb_cell = ws.cell(row=h_row1, column=total_cols, value="Ambient")
         amb_cell.font = FONT_HEADER
         amb_cell.alignment = ALIGN_CENTER
         amb_cell.fill = GRAY_HEADER_FILL
 
-        for r in [10, 11]:
+        for r in [h_row1, h_row2]:
             for c in range(1, total_cols + 1):
                 ws.cell(row=r, column=c).border = BORDER_ALL
 
-        # 5. Data Rows (Starting at Row 12)
+        # 5. Data Rows
         act_keys = ['input_actual', 'body_actual', 'body2_actual', 'bc1_actual', 'bc2_actual', 'bc3_actual', 'bc4_actual', 'bc5_actual', 'output_actual']
         rise_keys = ['input_rise', 'body_rise', 'body2_rise', 'bc1_rise', 'bc2_rise', 'bc3_rise', 'bc4_rise', 'bc5_rise', 'output_rise']
 
-        current_row = 12
+        data_start_row = h_row2 + 1
+        current_row = data_start_row
         for row_idx, item in enumerate(intervals):
             ws.row_dimensions[current_row].height = 20
             r_fill = ZEBRA_FILL if row_idx % 2 == 1 else PatternFill(fill_type=None)
