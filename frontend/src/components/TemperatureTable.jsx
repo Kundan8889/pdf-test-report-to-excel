@@ -677,6 +677,9 @@ export default function TemperatureTable({
                 {dynamicChannelList.map((ch, cIdx) => {
                   const actVal = row[ch.actKey] ?? 0;
                   const riseVal = row[ch.riseKey] ?? 0;
+                  const displayAct = actVal !== "" && actVal !== undefined && actVal !== null
+                    ? (typeof actVal === "number" ? actVal.toFixed(1) : actVal)
+                    : "";
                   return (
                     <React.Fragment key={cIdx}>
                       <td
@@ -686,12 +689,17 @@ export default function TemperatureTable({
                         }}
                       >
                         <input
-                          type="number"
-                          step="0.1"
-                          value={actVal}
+                          type="text"
+                          value={displayAct}
                           onChange={(e) =>
                             handleCellChange(rIdx, ch.actKey, e.target.value)
                           }
+                          onBlur={(e) => {
+                            const num = parseFloat(e.target.value);
+                            if (!isNaN(num)) {
+                              handleCellChange(rIdx, ch.actKey, parseFloat(num.toFixed(1)));
+                            }
+                          }}
                           style={{
                             width: "100%",
                             textAlign: "center",
@@ -728,12 +736,17 @@ export default function TemperatureTable({
                   }}
                 >
                   <input
-                    type="number"
-                    step="0.1"
-                    value={row.ambient}
+                    type="text"
+                    value={row.ambient !== "" && row.ambient !== undefined && row.ambient !== null ? (typeof row.ambient === "number" ? row.ambient.toFixed(1) : row.ambient) : ""}
                     onChange={(e) =>
                       handleCellChange(rIdx, "ambient", e.target.value)
                     }
+                    onBlur={(e) => {
+                      const num = parseFloat(e.target.value);
+                      if (!isNaN(num)) {
+                        handleCellChange(rIdx, "ambient", parseFloat(num.toFixed(1)));
+                      }
+                    }}
                     style={{
                       width: "100%",
                       textAlign: "center",
