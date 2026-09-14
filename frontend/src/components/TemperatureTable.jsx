@@ -38,34 +38,42 @@ export default function TemperatureTable({
       });
     }
   };
-  const defaultChannelList = [
-    { key: "input", label: "Input" },
-    { key: "body1", label: "Body" },
-    { key: "body2", label: "Body" },
-    { key: "bc1", label: "Bearing Cover 1" },
-    { key: "bc2", label: "Bearing Cover 2" },
-    { key: "bc3", label: "Bearing Cover 3" },
-    { key: "bc4", label: "Bearing Cover 4" },
-    { key: "bc5", label: "Bearing Cover 5" },
-    { key: "output", label: "Output" },
+  const channelDefinitions = [
+    { key: "input", actKey: "input_actual", riseKey: "input_rise", defaultLabel: "Input" },
+    { key: "body1", actKey: "body_actual", riseKey: "body_rise", defaultLabel: "Body" },
+    { key: "body2", actKey: "body2_actual", riseKey: "body2_rise", defaultLabel: "Body" },
+    { key: "bc1", actKey: "bc1_actual", riseKey: "bc1_rise", defaultLabel: "Bearing Cover 1" },
+    { key: "bc2", actKey: "bc2_actual", riseKey: "bc2_rise", defaultLabel: "Bearing Cover 2" },
+    { key: "bc3", actKey: "bc3_actual", riseKey: "bc3_rise", defaultLabel: "Bearing Cover 3" },
+    { key: "bc4", actKey: "bc4_actual", riseKey: "bc4_rise", defaultLabel: "Bearing Cover 4" },
+    { key: "bc5", actKey: "bc5_actual", riseKey: "bc5_rise", defaultLabel: "Bearing Cover 5" },
+    { key: "output", actKey: "output_actual", riseKey: "output_rise", defaultLabel: "Output" },
   ];
 
   const rawLabels = metadata?.channel_labels || [];
   const cleanLabels = Array.isArray(rawLabels)
     ? rawLabels.filter(
         (l) =>
-          !/^(ambient|amb|noise|time|direction|direct)$/i.test(
+          !/^(ambient|amb|ambt|noise|noies|sound|db|time|direction|direct|-|\s*)$/i.test(
             String(l).trim()
           )
       )
     : [];
 
-  const dynamicChannelList = defaultChannelList.map((ch, idx) => {
-    if (idx < cleanLabels.length && cleanLabels[idx]) {
-      return { ...ch, label: String(cleanLabels[idx]).trim() };
-    }
-    return ch;
-  });
+  const dynamicChannelList = cleanLabels.length > 0
+    ? cleanLabels.map((lbl, idx) => {
+        const baseDef = channelDefinitions[idx] || {
+          key: `ch_${idx}`,
+          actKey: `ch_${idx}_actual`,
+          riseKey: `ch_${idx}_rise`,
+          defaultLabel: `Channel ${idx + 1}`
+        };
+        return {
+          ...baseDef,
+          label: String(lbl).trim()
+        };
+      })
+    : channelDefinitions;
 
   const channelList = [
     ...dynamicChannelList,
@@ -549,7 +557,7 @@ export default function TemperatureTable({
                 color: "var(--text-secondary)",
               }}
             >
-              {Array.from({ length: 9 }).map((_, i) => (
+              {dynamicChannelList.map((_, i) => (
                 <React.Fragment key={i}>
                   <th
                     style={{
@@ -665,374 +673,52 @@ export default function TemperatureTable({
                   />
                 </td>
 
-                {/* Input */}
-                <td
-                  style={{
-                    border: "1px solid var(--table-inner-border)",
-                    padding: "0.25rem",
-                  }}
-                >
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={row.input_actual}
-                    onChange={(e) =>
-                      handleCellChange(rIdx, "input_actual", e.target.value)
-                    }
-                    style={{
-                      width: "100%",
-                      textAlign: "center",
-                      border: "1px solid transparent",
-                      padding: "0.15rem",
-                      color: "var(--text-primary)",
-                      backgroundColor: "transparent",
-                    }}
-                  />
-                </td>
-                <td
-                  style={{
-                    border: "1px solid var(--table-inner-border)",
-                    padding: "0.25rem",
-                    fontWeight: 600,
-                    color:
-                      row.input_rise > thresholdLimit
-                        ? "var(--danger-text)"
-                        : "var(--table-rise-text)",
-                    backgroundColor: "var(--table-rise-bg)",
-                  }}
-                >
-                  {row.input_rise > 0
-                    ? `+${row.input_rise.toFixed(1)}`
-                    : row.input_rise.toFixed(1)}
-                </td>
-
-                {/* Body */}
-                <td
-                  style={{
-                    border: "1px solid var(--table-inner-border)",
-                    padding: "0.25rem",
-                  }}
-                >
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={row.body_actual}
-                    onChange={(e) =>
-                      handleCellChange(rIdx, "body_actual", e.target.value)
-                    }
-                    style={{
-                      width: "100%",
-                      textAlign: "center",
-                      border: "1px solid transparent",
-                      padding: "0.15rem",
-                      color: "var(--text-primary)",
-                      backgroundColor: "transparent",
-                    }}
-                  />
-                </td>
-                <td
-                  style={{
-                    border: "1px solid var(--table-inner-border)",
-                    padding: "0.25rem",
-                    fontWeight: 600,
-                    color:
-                      row.body_rise > thresholdLimit
-                        ? "var(--danger-text)"
-                        : "var(--table-rise-text)",
-                    backgroundColor: "var(--table-rise-bg)",
-                  }}
-                >
-                  {row.body_rise > 0
-                    ? `+${row.body_rise.toFixed(1)}`
-                    : row.body_rise.toFixed(1)}
-                </td>
-
-                {/* Body 2 */}
-                <td
-                  style={{
-                    border: "1px solid var(--table-inner-border)",
-                    padding: "0.25rem",
-                  }}
-                >
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={row.body2_actual ?? row.body_actual}
-                    onChange={(e) =>
-                      handleCellChange(rIdx, "body2_actual", e.target.value)
-                    }
-                    style={{
-                      width: "100%",
-                      textAlign: "center",
-                      border: "1px solid transparent",
-                      padding: "0.15rem",
-                      color: "var(--text-primary)",
-                      backgroundColor: "transparent",
-                    }}
-                  />
-                </td>
-                <td
-                  style={{
-                    border: "1px solid var(--table-inner-border)",
-                    padding: "0.25rem",
-                    fontWeight: 600,
-                    color:
-                      (row.body2_rise ?? row.body_rise) > thresholdLimit
-                        ? "var(--danger-text)"
-                        : "var(--table-rise-text)",
-                    backgroundColor: "var(--table-rise-bg)",
-                  }}
-                >
-                  {(row.body2_rise ?? row.body_rise) > 0
-                    ? `+${(row.body2_rise ?? row.body_rise).toFixed(1)}`
-                    : (row.body2_rise ?? row.body_rise).toFixed(1)}
-                </td>
-
-                {/* BC1 */}
-                <td
-                  style={{
-                    border: "1px solid var(--table-inner-border)",
-                    padding: "0.25rem",
-                  }}
-                >
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={row.bc1_actual}
-                    onChange={(e) =>
-                      handleCellChange(rIdx, "bc1_actual", e.target.value)
-                    }
-                    style={{
-                      width: "100%",
-                      textAlign: "center",
-                      border: "1px solid transparent",
-                      padding: "0.15rem",
-                      color: "var(--text-primary)",
-                      backgroundColor: "transparent",
-                    }}
-                  />
-                </td>
-                <td
-                  style={{
-                    border: "1px solid var(--table-inner-border)",
-                    padding: "0.25rem",
-                    fontWeight: 600,
-                    color:
-                      row.bc1_rise > thresholdLimit
-                        ? "var(--danger-text)"
-                        : "var(--table-rise-text)",
-                    backgroundColor: "var(--table-rise-bg)",
-                  }}
-                >
-                  {row.bc1_rise > 0
-                    ? `+${row.bc1_rise.toFixed(1)}`
-                    : row.bc1_rise.toFixed(1)}
-                </td>
-
-                {/* BC2 */}
-                <td
-                  style={{
-                    border: "1px solid var(--table-inner-border)",
-                    padding: "0.25rem",
-                  }}
-                >
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={row.bc2_actual}
-                    onChange={(e) =>
-                      handleCellChange(rIdx, "bc2_actual", e.target.value)
-                    }
-                    style={{
-                      width: "100%",
-                      textAlign: "center",
-                      border: "1px solid transparent",
-                      padding: "0.15rem",
-                      color: "var(--text-primary)",
-                      backgroundColor: "transparent",
-                    }}
-                  />
-                </td>
-                <td
-                  style={{
-                    border: "1px solid var(--table-inner-border)",
-                    padding: "0.25rem",
-                    fontWeight: 600,
-                    color:
-                      row.bc2_rise > thresholdLimit
-                        ? "var(--danger-text)"
-                        : "var(--table-rise-text)",
-                    backgroundColor: "var(--table-rise-bg)",
-                  }}
-                >
-                  {row.bc2_rise > 0
-                    ? `+${row.bc2_rise.toFixed(1)}`
-                    : row.bc2_rise.toFixed(1)}
-                </td>
-
-                {/* BC3 */}
-                <td
-                  style={{
-                    border: "1px solid var(--table-inner-border)",
-                    padding: "0.25rem",
-                  }}
-                >
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={row.bc3_actual}
-                    onChange={(e) =>
-                      handleCellChange(rIdx, "bc3_actual", e.target.value)
-                    }
-                    style={{
-                      width: "100%",
-                      textAlign: "center",
-                      border: "1px solid transparent",
-                      padding: "0.15rem",
-                      color: "var(--text-primary)",
-                      backgroundColor: "transparent",
-                    }}
-                  />
-                </td>
-                <td
-                  style={{
-                    border: "1px solid var(--table-inner-border)",
-                    padding: "0.25rem",
-                    fontWeight: 600,
-                    color:
-                      row.bc3_rise > thresholdLimit
-                        ? "var(--danger-text)"
-                        : "var(--table-rise-text)",
-                    backgroundColor: "var(--table-rise-bg)",
-                  }}
-                >
-                  {row.bc3_rise > 0
-                    ? `+${row.bc3_rise.toFixed(1)}`
-                    : row.bc3_rise.toFixed(1)}
-                </td>
-
-                {/* BC4 */}
-                <td
-                  style={{
-                    border: "1px solid var(--table-inner-border)",
-                    padding: "0.25rem",
-                  }}
-                >
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={row.bc4_actual}
-                    onChange={(e) =>
-                      handleCellChange(rIdx, "bc4_actual", e.target.value)
-                    }
-                    style={{
-                      width: "100%",
-                      textAlign: "center",
-                      border: "1px solid transparent",
-                      padding: "0.15rem",
-                      color: "var(--text-primary)",
-                      backgroundColor: "transparent",
-                    }}
-                  />
-                </td>
-                <td
-                  style={{
-                    border: "1px solid var(--table-inner-border)",
-                    padding: "0.25rem",
-                    fontWeight: 600,
-                    color:
-                      row.bc4_rise > thresholdLimit
-                        ? "var(--danger-text)"
-                        : "var(--table-rise-text)",
-                    backgroundColor: "var(--table-rise-bg)",
-                  }}
-                >
-                  {row.bc4_rise > 0
-                    ? `+${row.bc4_rise.toFixed(1)}`
-                    : row.bc4_rise.toFixed(1)}
-                </td>
-
-                {/* BC5 */}
-                <td
-                  style={{
-                    border: "1px solid var(--table-inner-border)",
-                    padding: "0.25rem",
-                  }}
-                >
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={row.bc5_actual}
-                    onChange={(e) =>
-                      handleCellChange(rIdx, "bc5_actual", e.target.value)
-                    }
-                    style={{
-                      width: "100%",
-                      textAlign: "center",
-                      border: "1px solid transparent",
-                      padding: "0.15rem",
-                      color: "var(--text-primary)",
-                      backgroundColor: "transparent",
-                    }}
-                  />
-                </td>
-                <td
-                  style={{
-                    border: "1px solid var(--table-inner-border)",
-                    padding: "0.25rem",
-                    fontWeight: 600,
-                    color:
-                      row.bc5_rise > thresholdLimit
-                        ? "var(--danger-text)"
-                        : "var(--table-rise-text)",
-                    backgroundColor: "var(--table-rise-bg)",
-                  }}
-                >
-                  {row.bc5_rise > 0
-                    ? `+${row.bc5_rise.toFixed(1)}`
-                    : row.bc5_rise.toFixed(1)}
-                </td>
-
-                {/* Output */}
-                <td
-                  style={{
-                    border: "1px solid var(--table-inner-border)",
-                    padding: "0.25rem",
-                  }}
-                >
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={row.output_actual}
-                    onChange={(e) =>
-                      handleCellChange(rIdx, "output_actual", e.target.value)
-                    }
-                    style={{
-                      width: "100%",
-                      textAlign: "center",
-                      border: "1px solid transparent",
-                      padding: "0.15rem",
-                      color: "var(--text-primary)",
-                      backgroundColor: "transparent",
-                    }}
-                  />
-                </td>
-                <td
-                  style={{
-                    border: "1px solid var(--table-inner-border)",
-                    padding: "0.25rem",
-                    fontWeight: 600,
-                    color:
-                      row.output_rise > thresholdLimit
-                        ? "var(--danger-text)"
-                        : "var(--table-rise-text)",
-                    backgroundColor: "var(--table-rise-bg)",
-                  }}
-                >
-                  {row.output_rise > 0
-                    ? `+${row.output_rise.toFixed(1)}`
-                    : row.output_rise.toFixed(1)}
-                </td>
+                {/* Dynamic Temperature Component Columns */}
+                {dynamicChannelList.map((ch, cIdx) => {
+                  const actVal = row[ch.actKey] ?? 0;
+                  const riseVal = row[ch.riseKey] ?? 0;
+                  return (
+                    <React.Fragment key={cIdx}>
+                      <td
+                        style={{
+                          border: "1px solid var(--table-inner-border)",
+                          padding: "0.25rem",
+                        }}
+                      >
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={actVal}
+                          onChange={(e) =>
+                            handleCellChange(rIdx, ch.actKey, e.target.value)
+                          }
+                          style={{
+                            width: "100%",
+                            textAlign: "center",
+                            border: "1px solid transparent",
+                            padding: "0.15rem",
+                            color: "var(--text-primary)",
+                            backgroundColor: "transparent",
+                          }}
+                        />
+                      </td>
+                      <td
+                        style={{
+                          border: "1px solid var(--table-inner-border)",
+                          padding: "0.25rem",
+                          fontWeight: 600,
+                          color:
+                            riseVal > thresholdLimit
+                              ? "var(--danger-text)"
+                              : "var(--table-rise-text)",
+                          backgroundColor: "var(--table-rise-bg)",
+                        }}
+                      >
+                        {riseVal > 0 ? `+${Number(riseVal).toFixed(1)}` : Number(riseVal).toFixed(1)}
+                      </td>
+                    </React.Fragment>
+                  );
+                })}
 
                 {/* Ambient */}
                 <td

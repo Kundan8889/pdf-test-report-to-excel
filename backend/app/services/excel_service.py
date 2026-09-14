@@ -125,23 +125,16 @@ class ExcelService:
         ws.row_dimensions[10].height = 22
         ws.row_dimensions[11].height = 20
 
-        # Dynamic Component Groups from metadata.channel_labels (Cols 3 to 20)
-        raw_labels = metadata.channel_labels or [
-            "Input", "Body", "Body", "Bearing cover 1",
-            "Bearing Cover 2", "Bearing Cover 3", "Bearing Cover 4",
-            "Bearing Cover 5", "Output"
-        ]
+        # Dynamic Component Groups from metadata.channel_labels
+        raw_labels = metadata.channel_labels or []
         clean_labels = [
-            l for l in raw_labels
-            if not re.search(r'^(ambient|amb|noise|time|direction|direct)$', str(l).strip(), re.I)
+            str(l).strip() for l in raw_labels
+            if not re.search(r'^(ambient|amb|ambt|noise|noies|sound|db|time|direction|direct|-|\s*)$', str(l).strip(), re.I)
         ]
         default_names = ["Input", "Body", "Body", "Bearing cover 1", "Bearing Cover 2", "Bearing Cover 3", "Bearing Cover 4", "Bearing Cover 5", "Output"]
-        final_names = []
-        for i in range(9):
-            if i < len(clean_labels) and clean_labels[i]:
-                final_names.append(str(clean_labels[i]).strip())
-            else:
-                final_names.append(default_names[i])
+        final_names = clean_labels if clean_labels else default_names
+        num_channels = len(final_names)
+        total_cols = 2 + num_channels * 2 + 1
 
         components = [
             (name, 3 + i * 2, 4 + i * 2)
@@ -180,85 +173,53 @@ class ExcelService:
             c2.alignment = ALIGN_CENTER
             c2.fill = GRAY_HEADER_FILL
 
-        # Col 21: Ambient
-        ws.merge_cells(start_row=10, start_column=21, end_row=11, end_column=21)
-        amb_cell = ws.cell(row=10, column=21, value="Ambient")
+        # Ambient Col
+        ws.merge_cells(start_row=10, start_column=total_cols, end_row=11, end_column=total_cols)
+        amb_cell = ws.cell(row=10, column=total_cols, value="Ambient")
         amb_cell.font = FONT_HEADER
         amb_cell.alignment = ALIGN_CENTER
         amb_cell.fill = GRAY_HEADER_FILL
 
         for r in [10, 11]:
-            for c in range(1, 22):
+            for c in range(1, total_cols + 1):
                 ws.cell(row=r, column=c).border = BORDER_ALL
 
         # 5. Data Rows (Starting at Row 12)
+        act_keys = ['input_actual', 'body_actual', 'body2_actual', 'bc1_actual', 'bc2_actual', 'bc3_actual', 'bc4_actual', 'bc5_actual', 'output_actual']
+        rise_keys = ['input_rise', 'body_rise', 'body2_rise', 'bc1_rise', 'bc2_rise', 'bc3_rise', 'bc4_rise', 'bc5_rise', 'output_rise']
+
         current_row = 12
         for row_idx, item in enumerate(intervals):
             ws.row_dimensions[current_row].height = 20
             r_fill = ZEBRA_FILL if row_idx % 2 == 1 else PatternFill(fill_type=None)
 
-            # Col 1: Time (Clean time label without attached extra strings)
+            # Col 1: Time
             raw_time = str(item.time_label or '').strip()
             clean_time = re.split(r'\s*\(', raw_time)[0].strip() if '(' in raw_time else raw_time
             c_time = ws.cell(row=current_row, column=1, value=clean_time or raw_time)
             c_time.font = FONT_BOLD
             c_time.alignment = ALIGN_CENTER
 
-            # Col 2: Direction (Strictly CW or CCW)
+            # Col 2: Direction
             raw_dir = str(getattr(item, 'direction', '') or '').strip().upper()
-            if 'CCW' in raw_dir:
-                clean_dir = 'CCW'
-            elif 'CW' in raw_dir:
-                clean_dir = 'CW'
-            else:
-                clean_dir = 'CW' if row_idx < 7 else 'CCW'
-
+            clean_dir = 'CCW' if 'CCW' in raw_dir else 'CW'
             c_dir = ws.cell(row=current_row, column=2, value=clean_dir)
             c_dir.font = FONT_BOLD
             c_dir.alignment = ALIGN_CENTER
 
-            # Input
-            ws.cell(row=current_row, column=3, value=item.input_actual).alignment = ALIGN_CENTER
-            ws.cell(row=current_row, column=4, value=item.input_rise).alignment = ALIGN_CENTER
-
-            # Body
-            ws.cell(row=current_row, column=5, value=item.body_actual).alignment = ALIGN_CENTER
-            ws.cell(row=current_row, column=6, value=item.body_rise).alignment = ALIGN_CENTER
-
-            # Body 2
-            body2_act = getattr(item, 'body2_actual', item.body_actual)
-            body2_r = getattr(item, 'body2_rise', item.body_rise)
-            ws.cell(row=current_row, column=7, value=body2_act).alignment = ALIGN_CENTER
-            ws.cell(row=current_row, column=8, value=body2_r).alignment = ALIGN_CENTER
-
-            # Bearing 1
-            ws.cell(row=current_row, column=9, value=item.bc1_actual).alignment = ALIGN_CENTER
-            ws.cell(row=current_row, column=10, value=item.bc1_rise).alignment = ALIGN_CENTER
-
-            # Bearing 2
-            ws.cell(row=current_row, column=11, value=item.bc2_actual).alignment = ALIGN_CENTER
-            ws.cell(row=current_row, column=12, value=item.bc2_rise).alignment = ALIGN_CENTER
-
-            # Bearing 3
-            ws.cell(row=current_row, column=13, value=item.bc3_actual).alignment = ALIGN_CENTER
-            ws.cell(row=current_row, column=14, value=item.bc3_rise).alignment = ALIGN_CENTER
-
-            # Bearing 4
-            ws.cell(row=current_row, column=15, value=item.bc4_actual).alignment = ALIGN_CENTER
-            ws.cell(row=current_row, column=16, value=item.bc4_rise).alignment = ALIGN_CENTER
-
-            # Bearing 5
-            ws.cell(row=current_row, column=17, value=item.bc5_actual).alignment = ALIGN_CENTER
-            ws.cell(row=current_row, column=18, value=item.bc5_rise).alignment = ALIGN_CENTER
-
-            # Output
-            ws.cell(row=current_row, column=19, value=item.output_actual).alignment = ALIGN_CENTER
-            ws.cell(row=current_row, column=20, value=item.output_rise).alignment = ALIGN_CENTER
+            # Dynamic Channels
+            for ch_i in range(num_channels):
+                act_k = act_keys[ch_i] if ch_i < len(act_keys) else f"ch_{ch_i}_actual"
+                rise_k = rise_keys[ch_i] if ch_i < len(rise_keys) else f"ch_{ch_i}_rise"
+                act_v = getattr(item, act_k, 0.0) or 0.0
+                rise_v = getattr(item, rise_k, 0.0) or 0.0
+                ws.cell(row=current_row, column=3 + ch_i * 2, value=act_v).alignment = ALIGN_CENTER
+                ws.cell(row=current_row, column=4 + ch_i * 2, value=rise_v).alignment = ALIGN_CENTER
 
             # Ambient
-            ws.cell(row=current_row, column=21, value=item.ambient).alignment = ALIGN_CENTER
+            ws.cell(row=current_row, column=total_cols, value=item.ambient).alignment = ALIGN_CENTER
 
-            for c in range(1, 22):
+            for c in range(1, total_cols + 1):
                 cell = ws.cell(row=current_row, column=c)
                 cell.border = BORDER_ALL
                 cell.font = FONT_REGULAR if c not in [1, 2] else FONT_BOLD

@@ -29,17 +29,6 @@ class GeminiService:
         api_key = cls.get_api_key()
         if not api_key:
             return None
-
-        models_to_try = [
-            "gemini-flash-latest",
-            "gemini-3.5-flash-lite",
-            "gemini-3.5-flash",
-            "gemini-pro-latest",
-            "gemini-2.5-flash"
-        ]
-
-        b64_image = base64.b64encode(image_bytes).decode("utf-8")
-
         prompt = """
 You are an expert industrial document extraction system specialized in laboratory thermal and gearbox temperature rise test reports.
 Analyze the provided test report image carefully (including handwritten blue/black ink entries, printed labels, column headers, and title blocks).
@@ -58,20 +47,18 @@ Extract the EXACT data in the following JSON format:
     "direction_changed_at": "Direction changed time if noted, else '-'",
     "duration": "Test duration string from document",
     "noise_level_limit": "< 85 dB",
-    "noise_level_measured": "Measured noise level with units if present, e.g. 78 dB or 74.5 dB (1/2 hour)",
+    "noise_level_measured": "Measured noise level with units if present, e.g. 78.5 dB or 78 dB",
     "temp_rise_limit": "< 40°C over the ambient ( after 1hour )",
     "lubrication_leakage": "No leakage or '-'",
     "conclusion": "COMPLIES (ALL PARAMETERS PASS) or '-'",
     "channel_labels": [
       "Exact Name of Column 1 (e.g. Input)",
-      "Exact Name of Column 2 (e.g. R1, Body)",
-      "Exact Name of Column 3 (e.g. R2, Body)",
-      "Exact Name of Column 4 (e.g. R3, Bearing cover 1)",
-      "Exact Name of Column 5 (e.g. R4, Bearing cover 2)",
-      "Exact Name of Column 6 (e.g. R5, Bearing cover 3)",
-      "Exact Name of Column 7 (e.g. Bearing cover 4, Pinion)",
-      "Exact Name of Column 8 (e.g. Bearing cover 5, Pinion)",
-      "Exact Name of Column 9 (e.g. O/P, Output)"
+      "Exact Name of Column 2 (e.g. R1)",
+      "Exact Name of Column 3 (e.g. R2)",
+      "Exact Name of Column 4 (e.g. R3)",
+      "Exact Name of Column 5 (e.g. R4)",
+      "Exact Name of Column 6 (e.g. R5)",
+      "Exact Name of Column 7 (e.g. O/P Pinion)"
     ]
   },
   "intervals": [
@@ -86,27 +73,53 @@ Extract the EXACT data in the following JSON format:
       "bc2_actual": 24.5,
       "bc3_actual": 24.3,
       "bc4_actual": 25.0,
-      "bc5_actual": 25.0,
-      "output_actual": 25.0
+      "bc5_actual": null,
+      "output_actual": null
     }
   ]
 }
 
-CRITICAL EXTRACTION RULES:
-1. DYNAMIC COLUMN HEADERS: Look closely at what is printed or handwritten above each temperature component column (e.g. Input, R1, R2, R3, R4, R5, O/P, Pinion, Body, Bearing cover 1-5, Output). Extract ONLY the temperature component column names into metadata.channel_labels. Do NOT include 'Ambient'/'Ambt' or 'Noise'/'Noice' in channel_labels (Ambient and Noise are separate fields).
-2. DIRECTION ACCURACY (CW vs CCW):
+CRITICAL RULES:
+1. DYNAMIC COMPONENT CHANNELS:
+   - Identify each individual temperature component column in the table (e.g. Input, R1, R2, R3, R4, R5, O/P Pinion).
+   - In 'metadata.channel_labels', return ONLY the array of actual component column names present in the table. If there are 7 component columns, return exactly 7 strings in channel_labels.
+   - DO NOT include 'Ambient'/'Ambt' or 'Noise'/'Noies' in channel_labels.
+2. AMBIENT & NOISE ARE NEVER TEMPERATURE COMPONENT CHANNELS:
+   - 'Ambt' / 'Ambient' (e.g. 24.6, 26.0, 26.4...) is the ambient reference temperature. Store this ONLY in the 'ambient' field of each interval. NEVER duplicate ambient values into a component column!
+   - 'Noies' / 'Noise' (e.g. 78, 78.4, 78.5) is the sound level in dB. Store the final/peak reading ONLY in 'metadata.noise_level_measured' (e.g. '78.5 dB'). NEVER put noise numbers into 'output_actual' or any temperature column!
+3. MAPPING INTERVALS:
+   - Map component columns in strict left-to-right order into:
+     * 1st component -> input_actual
+     * 2nd component -> body_actual
+     * 3rd component -> body2_actual
+     * 4th component -> bc1_actual
+     * 5th component -> bc2_actual
+     * 6th component -> bc3_actual
+     * 7th component -> bc4_actual
+     * 8th component -> bc5_actual (or null if absent)
+     * 9th component -> output_actual (or null if absent)
+   - If a document has fewer than 9 component columns (e.g. only 7 components), set the unused remaining actual fields to null! Do NOT put Noise or Ambient into unused fields!
+4. DIRECTION ACCURACY:
    - Check the 'Direct' / 'Direction' column for each individual row.
-   - Initial intervals of the test (e.g. 9:30, 10:00, 10:30, 11:00) run in Clockwise direction ('CW'). If the cell has 'CW', a ditto mark, or represents early test rows before reversal, output 'CW'. NEVER output 'CCW' for early rows.
-   - When the test switches direction to Counter-Clockwise (e.g. 11:30, 12:00, 12:30 or when 'CCW' / 'C.C.W.' is noted), output 'CCW'.
-   - Verify every row's direction carefully so that CW and CCW are 100% accurate.
-3. EXACT ROW COUNT: ONLY include the EXACT rows present in the image table (if there are 3 rows, return exactly 3 objects in intervals array; if 7 rows, return 7).
-4. EXACT NUMERICAL VALUES: Read handwritten digits with high precision (e.g. 25.1, 25.5, 24.3, 24.5, 30.8, 34.3, 49.6, etc.). Distinguish 7 from +, 1 from 7, 0 from 8.
-5. NOISE LEVEL EXTRACTION:
-   - Check BOTH the upper specifications (e.g. 'NOISE LEVEL: ACTUAL - DB') AND any table column labeled 'Noise', 'Noies', 'Sound', or 'dB'.
-   - If values are written in the table under the 'Noise' / 'Noies' column (e.g. 78, 78.4, 78.5), extract the final/peak reading with units (e.g. '78.5 dB' or '78 dB') into metadata.noise_level_measured.
-   - Never omit noise if handwritten/printed values are present in the table or header.
-6. Return ONLY valid, parseable JSON with NO markdown formatting, NO triple backticks.
+   - Initial intervals run in Clockwise direction ('CW'). Output 'CW' for initial rows.
+   - When the test switches to Counter-Clockwise ('CCW'), output 'CCW'.
+5. EXACT ROW COUNT & PRECISION: Read all digits with 100% precision. Return ONLY valid JSON.
 """
+
+        # Optimize image size for lightning-fast transfer (~150KB JPEG vs 4MB PNG)
+        try:
+            from PIL import Image
+            import io
+            with Image.open(io.BytesIO(image_bytes)) as pil_img:
+                if pil_img.mode != "RGB":
+                    pil_img = pil_img.convert("RGB")
+                buf = io.BytesIO()
+                pil_img.save(buf, format="JPEG", quality=85, optimize=True)
+                b64_image = base64.b64encode(buf.getvalue()).decode("utf-8")
+                mime_type = "image/jpeg"
+        except Exception:
+            b64_image = base64.b64encode(image_bytes).decode("utf-8")
+            mime_type = "image/png"
 
         payload = {
             "contents": [
@@ -115,7 +128,7 @@ CRITICAL EXTRACTION RULES:
                         {"text": prompt},
                         {
                             "inline_data": {
-                                "mime_type": "image/png",
+                                "mime_type": mime_type,
                                 "data": b64_image
                             }
                         }
@@ -128,10 +141,17 @@ CRITICAL EXTRACTION RULES:
             }
         }
 
+        # Fast priority models
+        models_to_try = [
+            "gemini-3.5-flash-lite",
+            "gemini-flash-lite-latest",
+            "gemini-3.5-flash"
+        ]
+
         for model_name in models_to_try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
             try:
-                with httpx.Client(timeout=35.0) as client:
+                with httpx.Client(timeout=12.0) as client:
                     response = client.post(url, json=payload)
                     if response.status_code == 200:
                         res_json = response.json()
@@ -167,7 +187,7 @@ CRITICAL EXTRACTION RULES:
                 if l_str and not re.search(r'^(amb|ambt|ambient|noise|noice|db|time|direct|direction|-|\s*)$', l_str, re.I):
                     clean_channel_labels.append(l_str)
 
-        def _get_val(d: dict, *keys, default=28.0) -> float:
+        def _get_val(d: dict, *keys, default=0.0) -> float:
             for k in keys:
                 if k in d and d[k] is not None:
                     try:
@@ -179,15 +199,15 @@ CRITICAL EXTRACTION RULES:
         processed_intervals: List[TimeIntervalReading] = []
         for item in raw_intervals:
             amb = _get_val(item, "ambient", "ambient_temp", "amb", default=28.0)
-            inp = _get_val(item, "input_actual", "input", "inp", default=27.5)
-            b1 = _get_val(item, "body_actual", "body", "body1", "b1", default=26.6)
-            b2 = _get_val(item, "body2_actual", "body2", "b2", default=b1)
-            bc1 = _get_val(item, "bc1_actual", "bc1", "bearing_cover_1", default=b1)
-            bc2 = _get_val(item, "bc2_actual", "bc2", "bearing_cover_2", default=b1)
-            bc3 = _get_val(item, "bc3_actual", "bc3", "bearing_cover_3", default=b1)
-            bc4 = _get_val(item, "bc4_actual", "bc4", "bearing_cover_4", default=b1)
-            bc5 = _get_val(item, "bc5_actual", "bc5", "bearing_cover_5", default=b1)
-            out = _get_val(item, "output_actual", "output", "out", default=b1)
+            inp = _get_val(item, "input_actual", "input", "inp", default=0.0)
+            b1 = _get_val(item, "body_actual", "body", "body1", "b1", default=0.0)
+            b2 = _get_val(item, "body2_actual", "body2", "b2", default=0.0)
+            bc1 = _get_val(item, "bc1_actual", "bc1", "bearing_cover_1", default=0.0)
+            bc2 = _get_val(item, "bc2_actual", "bc2", "bearing_cover_2", default=0.0)
+            bc3 = _get_val(item, "bc3_actual", "bc3", "bearing_cover_3", default=0.0)
+            bc4 = _get_val(item, "bc4_actual", "bc4", "bearing_cover_4", default=0.0)
+            bc5 = _get_val(item, "bc5_actual", "bc5", "bearing_cover_5", default=0.0)
+            out = _get_val(item, "output_actual", "output", "out", default=0.0)
 
             direction = str(item.get("direction", "CW") or "CW").strip().upper()
             direction = "CCW" if "CCW" in direction else "CW"
@@ -197,23 +217,23 @@ CRITICAL EXTRACTION RULES:
                 direction=direction,
                 ambient=amb,
                 input_actual=inp,
-                input_rise=round(inp - amb, 1),
+                input_rise=round(inp - amb, 1) if inp else 0.0,
                 body_actual=b1,
-                body_rise=round(b1 - amb, 1),
+                body_rise=round(b1 - amb, 1) if b1 else 0.0,
                 body2_actual=b2,
-                body2_rise=round(b2 - amb, 1),
+                body2_rise=round(b2 - amb, 1) if b2 else 0.0,
                 bc1_actual=bc1,
-                bc1_rise=round(bc1 - amb, 1),
+                bc1_rise=round(bc1 - amb, 1) if bc1 else 0.0,
                 bc2_actual=bc2,
-                bc2_rise=round(bc2 - amb, 1),
+                bc2_rise=round(bc2 - amb, 1) if bc2 else 0.0,
                 bc3_actual=bc3,
-                bc3_rise=round(bc3 - amb, 1),
+                bc3_rise=round(bc3 - amb, 1) if bc3 else 0.0,
                 bc4_actual=bc4,
-                bc4_rise=round(bc4 - amb, 1),
+                bc4_rise=round(bc4 - amb, 1) if bc4 else 0.0,
                 bc5_actual=bc5,
-                bc5_rise=round(bc5 - amb, 1),
+                bc5_rise=round(bc5 - amb, 1) if bc5 else 0.0,
                 output_actual=out,
-                output_rise=round(out - amb, 1)
+                output_rise=round(out - amb, 1) if out else 0.0
             ))
 
         noise_measured = str(meta_dict.get("noise_level_measured") or "").strip()

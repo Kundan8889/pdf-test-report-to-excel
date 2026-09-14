@@ -77,24 +77,25 @@ class WordService:
         font.size = Pt(9.0)
         font.color.rgb = RGBColor(0x1E, 0x29, 0x3B)
 
-        # Total printable width = 11.693 - 0.90 = 10.793 inches
-        # 21 Columns: Time (0.75 in), Direction (0.65 in), 18 channels (0.485 in each = 8.73 in), Ambient (0.663 in)
-        col_widths = [
-            Inches(0.75),  # 0: Time
-            Inches(0.65),  # 1: Direction
-            Inches(0.485), Inches(0.485),  # 2,3: Ch1 (Act, Rise)
-            Inches(0.485), Inches(0.485),  # 4,5: Ch2 (Act, Rise)
-            Inches(0.485), Inches(0.485),  # 6,7: Ch3 (Act, Rise)
-            Inches(0.485), Inches(0.485),  # 8,9: Ch4 (Act, Rise)
-            Inches(0.485), Inches(0.485),  # 10,11: Ch5 (Act, Rise)
-            Inches(0.485), Inches(0.485),  # 12,13: Ch6 (Act, Rise)
-            Inches(0.485), Inches(0.485),  # 14,15: Ch7 (Act, Rise)
-            Inches(0.485), Inches(0.485),  # 16,17: Ch8 (Act, Rise)
-            Inches(0.485), Inches(0.485),  # 18,19: Ch9 (Act, Rise)
-            Inches(0.663),  # 20: Ambient
+        # Dynamic Component Groups from metadata.channel_labels
+        raw_labels = metadata.channel_labels or []
+        clean_labels = [
+            str(l).strip() for l in raw_labels
+            if not re.search(r'^(ambient|amb|ambt|noise|noies|sound|db|time|direction|direct|-|\s*)$', str(l).strip(), re.I)
         ]
+        default_names = ["Input", "Body", "Body", "Bearing cover 1", "Bearing Cover 2", "Bearing Cover 3", "Bearing Cover 4", "Bearing Cover 5", "Output"]
+        final_names = clean_labels if clean_labels else default_names
+        num_channels = len(final_names)
+        total_cols = 2 + num_channels * 2 + 1
 
-        total_cols = 21
+        # Total printable width = 11.693 - 0.90 = 10.793 inches
+        remaining_w = 10.793 - 0.75 - 0.65 - 0.663
+        ch_w = Inches(remaining_w / (num_channels * 2)) if num_channels > 0 else Inches(0.485)
+
+        col_widths = [Inches(0.75), Inches(0.65)]
+        for _ in range(num_channels * 2):
+            col_widths.append(ch_w)
+        col_widths.append(Inches(0.663))
 
         # Calculate total rows required:
         # Title (1) + Info (4) + Noise (1) + Temp Limit (1) + Table Header (2) + Intervals (N) + Lubrication (1)
@@ -106,7 +107,8 @@ class WordService:
         # Apply column widths across all cells
         for row in table.rows:
             for c_idx, width in enumerate(col_widths):
-                row.cells[c_idx].width = width
+                if c_idx < len(row.cells):
+                    row.cells[c_idx].width = width
 
         def format_cell(cell, text, bold=False, color_rgb=(0x1E, 0x29, 0x3B), bg_color=None, align=WD_ALIGN_PARAGRAPH.LEFT, font_size=9.0):
             cell.text = ""
@@ -143,25 +145,26 @@ class WordService:
             ("Started At:", metadata.started_at, "Direction Changed At:", metadata.direction_changed_at),
             ("Test Duration:", metadata.duration, "Conclusion:", metadata.conclusion),
         ]
+        mid_split = max(1, total_cols // 2)
         for k1, v1, k2, v2 in info_pairs:
-            # k1 (Cols 0-2)
+            # k1 (Cols 0 to 2)
             c_k1 = table.cell(current_row_idx, 0)
-            c_k1.merge(table.cell(current_row_idx, 2))
+            c_k1.merge(table.cell(current_row_idx, min(2, mid_split - 2)))
             format_cell(c_k1, k1, bold=True, bg_color="E2E8F0", font_size=8.0)
 
-            # v1 (Cols 3-9)
-            c_v1 = table.cell(current_row_idx, 3)
-            c_v1.merge(table.cell(current_row_idx, 9))
+            # v1 (Cols 3 to mid_split-1)
+            c_v1 = table.cell(current_row_idx, min(3, mid_split - 1))
+            c_v1.merge(table.cell(current_row_idx, mid_split - 1))
             format_cell(c_v1, v1, bold=False, font_size=8.0)
 
-            # k2 (Cols 10-13)
-            c_k2 = table.cell(current_row_idx, 10)
-            c_k2.merge(table.cell(current_row_idx, 13))
+            # k2 (Cols mid_split to mid_split+2)
+            c_k2 = table.cell(current_row_idx, mid_split)
+            c_k2.merge(table.cell(current_row_idx, min(mid_split + 2, total_cols - 2)))
             format_cell(c_k2, k2, bold=True, bg_color="E2E8F0", font_size=8.0)
 
-            # v2 (Cols 14-20)
-            c_v2 = table.cell(current_row_idx, 14)
-            c_v2.merge(table.cell(current_row_idx, 20))
+            # v2 (Cols mid_split+3 to total_cols-1)
+            c_v2 = table.cell(current_row_idx, min(mid_split + 3, total_cols - 1))
+            c_v2.merge(table.cell(current_row_idx, total_cols - 1))
             format_cell(c_v2, v2, bold=False, font_size=8.0)
 
             current_row_idx += 1
@@ -172,11 +175,11 @@ class WordService:
         format_cell(c_n1, "Noise level", bold=True, font_size=8.0)
 
         c_n2 = table.cell(current_row_idx, 3)
-        c_n2.merge(table.cell(current_row_idx, 15))
+        c_n2.merge(table.cell(current_row_idx, max(3, total_cols - 6)))
         format_cell(c_n2, metadata.noise_level_limit or "< 85 dB", font_size=8.0)
 
-        c_n3 = table.cell(current_row_idx, 16)
-        c_n3.merge(table.cell(current_row_idx, 20))
+        c_n3 = table.cell(current_row_idx, max(4, total_cols - 5))
+        c_n3.merge(table.cell(current_row_idx, total_cols - 1))
         format_cell(c_n3, metadata.noise_level_measured or "74.5 dB (1/2 hour)", bold=True, align=WD_ALIGN_PARAGRAPH.RIGHT, font_size=8.0)
         current_row_idx += 1
 
@@ -201,24 +204,6 @@ class WordService:
         c_dir_h.merge(table.cell(head_row2, 1))
         format_cell(c_dir_h, "Direction", bold=True, bg_color="E2E8F0", align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
 
-        # Dynamic Component Groups from metadata.channel_labels (Cols 2 to 19)
-        raw_labels = metadata.channel_labels or [
-            "Input", "Body", "Body", "Bearing cover 1",
-            "Bearing Cover 2", "Bearing Cover 3", "Bearing Cover 4",
-            "Bearing Cover 5", "Output"
-        ]
-        clean_labels = [
-            l for l in raw_labels
-            if not re.search(r'^(ambient|amb|noise|noice|time|direction|direct)$', str(l).strip(), re.I)
-        ]
-        default_names = ["Input", "Body", "Body", "Bearing cover 1", "Bearing Cover 2", "Bearing Cover 3", "Bearing Cover 4", "Bearing Cover 5", "Output"]
-        final_names = []
-        for i in range(9):
-            if i < len(clean_labels) and clean_labels[i]:
-                final_names.append(str(clean_labels[i]).strip())
-            else:
-                final_names.append(default_names[i])
-
         components = [
             (name, 2 + i * 2, 3 + i * 2)
             for i, name in enumerate(final_names)
@@ -234,9 +219,9 @@ class WordService:
             sub_c2 = table.cell(head_row2, end_c)
             format_cell(sub_c2, "Temp\nRise", bold=True, bg_color="E2E8F0", align=WD_ALIGN_PARAGRAPH.CENTER, font_size=7.5)
 
-        # Ambient (Col 20)
-        c_amb_h = table.cell(head_row1, 20)
-        c_amb_h.merge(table.cell(head_row2, 20))
+        # Ambient Col
+        c_amb_h = table.cell(head_row1, total_cols - 1)
+        c_amb_h.merge(table.cell(head_row2, total_cols - 1))
         format_cell(c_amb_h, "Ambient", bold=True, bg_color="E2E8F0", align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
 
         current_row_idx += 2
@@ -248,6 +233,9 @@ class WordService:
             if m_th:
                 threshold = float(m_th.group(0))
 
+        act_keys = ['input_actual', 'body_actual', 'body2_actual', 'bc1_actual', 'bc2_actual', 'bc3_actual', 'bc4_actual', 'bc5_actual', 'output_actual']
+        rise_keys = ['input_rise', 'body_rise', 'body2_rise', 'bc1_rise', 'bc2_rise', 'bc3_rise', 'bc4_rise', 'bc5_rise', 'output_rise']
+
         for row_idx, item in enumerate(intervals):
             r_bg = "F8FAFC" if row_idx % 2 == 1 else None
 
@@ -258,49 +246,35 @@ class WordService:
 
             # Direction (Strictly CW / CCW)
             raw_dir = str(getattr(item, 'direction', '') or '').strip().upper()
-            clean_dir = "CCW" if "CCW" in raw_dir else "CW"
+            clean_dir = 'CCW' if 'CCW' in raw_dir else 'CW'
             format_cell(table.cell(current_row_idx, 1), clean_dir, bold=True, bg_color=r_bg, align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
 
-            # Values mapping
-            body2_act = getattr(item, 'body2_actual', item.body_actual)
-            body2_r = getattr(item, 'body2_rise', item.body_rise)
-            val_pairs = [
-                (item.input_actual, item.input_rise),
-                (item.body_actual, item.body_rise),
-                (body2_act, body2_r),
-                (item.bc1_actual, item.bc1_rise),
-                (item.bc2_actual, item.bc2_rise),
-                (item.bc3_actual, item.bc3_rise),
-                (item.bc4_actual, item.bc4_rise),
-                (item.bc5_actual, item.bc5_rise),
-                (item.output_actual, item.output_rise),
-            ]
+            # Dynamic Channels
+            for ch_i in range(num_channels):
+                act_k = act_keys[ch_i] if ch_i < len(act_keys) else f"ch_{ch_i}_actual"
+                rise_k = rise_keys[ch_i] if ch_i < len(rise_keys) else f"ch_{ch_i}_rise"
+                act_v = getattr(item, act_k, 0.0) or 0.0
+                rise_v = getattr(item, rise_k, 0.0) or 0.0
 
-            col_curr = 2
-            for act, rise in val_pairs:
-                format_cell(table.cell(current_row_idx, col_curr), f"{act:.1f}", bg_color=r_bg, align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
-                # Temp rise with subtle red if > threshold
-                rise_bg = "FEE2E2" if rise > threshold else r_bg
-                rise_color = (0xDC, 0x26, 0x26) if rise > threshold else (0x1E, 0x29, 0x3B)
-                format_cell(table.cell(current_row_idx, col_curr + 1), f"{rise:.1f}", color_rgb=rise_color, bg_color=rise_bg, align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
-                col_curr += 2
+                format_cell(table.cell(current_row_idx, 2 + ch_i * 2), f"{act_v:.1f}", bg_color=r_bg, align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
+
+                rise_str = f"+{rise_v:.1f}" if rise_v > 0 else f"{rise_v:.1f}"
+                rise_cell = table.cell(current_row_idx, 3 + ch_i * 2)
+                if rise_v > threshold:
+                    format_cell(rise_cell, rise_str, bold=True, color_rgb=(0xDC, 0x26, 0x26), bg_color="FEE2E2", align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
+                else:
+                    format_cell(rise_cell, rise_str, color_rgb=(0x03, 0x69, 0xA1), bg_color="F0F9FF", align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
 
             # Ambient
-            format_cell(table.cell(current_row_idx, 20), f"{item.ambient:.1f}", bg_color=r_bg, align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
+            format_cell(table.cell(current_row_idx, total_cols - 1), f"{item.ambient:.1f}", bg_color=r_bg, align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
+
             current_row_idx += 1
 
-        # 7. Lubrication Leakage Footer
-        c_lub_label = table.cell(current_row_idx, 0)
-        c_lub_label.merge(table.cell(current_row_idx, 2))
-        format_cell(c_lub_label, "Lubrication leakage", bold=True, font_size=8.0)
-
-        c_lub_val1 = table.cell(current_row_idx, 3)
-        c_lub_val1.merge(table.cell(current_row_idx, 11))
-        format_cell(c_lub_val1, metadata.lubrication_leakage or "No leakage", align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
-
-        c_lub_val2 = table.cell(current_row_idx, 12)
-        c_lub_val2.merge(table.cell(current_row_idx, 20))
-        format_cell(c_lub_val2, metadata.lubrication_leakage or "No leakage", align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
+        # 7. Lubrication & Status Summary Footer
+        c_lub = table.cell(current_row_idx, 0)
+        for c in range(1, total_cols):
+            c_lub.merge(table.cell(current_row_idx, c))
+        format_cell(c_lub, f"Oil / Lubrication: {metadata.lubrication_leakage or 'No leakage'}  |  Final Result: {metadata.conclusion or 'COMPLIES'}", bold=True, bg_color="F1F5F9", font_size=8.0)
 
         out_path = get_output_path(output_filename)
         doc.save(str(out_path))

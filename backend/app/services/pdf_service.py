@@ -49,7 +49,26 @@ class PDFService:
         except Exception as e:
             print(f"pypdf image extraction error: {e}")
 
-        # Fallback: if no embedded images found, rasterize Page 1 via pdfplumber
+        # High-Speed Page 1 image rendering via pypdfium2
+        if not images:
+            try:
+                import pypdfium2 as pdfium
+                import io
+                pdf = pdfium.PdfDocument(str(file_path))
+                page_count = len(pdf)
+                if page_count > 0:
+                    p0 = pdf[0]
+                    pil_img = p0.render(scale=1.5).to_pil()
+                    buf = io.BytesIO()
+                    pil_img.save(buf, format="JPEG", quality=85)
+                    class SimpleImg:
+                        def __init__(self, d):
+                            self.data = d
+                    images.append(SimpleImg(buf.getvalue()))
+            except Exception as e:
+                print(f"pypdfium2 rendering error: {e}")
+
+        # Fallback: if no images found, rasterize Page 1 via pdfplumber
         if not images:
             try:
                 with pdfplumber.open(file_path) as pdf:
