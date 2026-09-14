@@ -185,6 +185,26 @@ CRITICAL RULES:
                 print(f"Gemini API call failed for {model_name}: {e}")
 
         return None
+    @staticmethod
+    def _normalize_time(raw_time: str) -> str:
+        """Normalizes time format to ensure AM/PM is always at the end (e.g. '12:35 PM' instead of 'PM 12.35')."""
+        if not raw_time:
+            return ""
+        t = str(raw_time).strip()
+        # Fix prefix AM/PM e.g. "PM 12.35" or "Pm 12:35" or "am 10.00"
+        m_prefix = re.match(r'^(?:(AM|PM|am|pm))\s*[:.\-\s]?\s*([0-9]{1,2}[:.][0-9]{2})$', t, re.I)
+        if m_prefix:
+            period = m_prefix.group(1).upper()
+            time_part = m_prefix.group(2).replace('.', ':')
+            return f"{time_part} {period}"
+        # Fix trailing format e.g. "12.35 pm" -> "12:35 PM" or "12.35" -> "12:35"
+        m_suffix = re.match(r'^([0-9]{1,2})[:.]([0-9]{2})\s*(?:(AM|PM|am|pm))?$', t, re.I)
+        if m_suffix:
+            hh = m_suffix.group(1)
+            mm = m_suffix.group(2)
+            period = f" {m_suffix.group(3).upper()}" if m_suffix.group(3) else ""
+            return f"{hh}:{mm}{period}"
+        return t
 
     @classmethod
     def _postprocess_gemini_data(cls, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -198,7 +218,7 @@ CRITICAL RULES:
         if isinstance(raw_channel_labels, list):
             for l in raw_channel_labels:
                 l_str = str(l).strip()
-                if l_str and not re.search(r'^(amb|ambt|ambient|noise|noice|db|time|direct|direction|-|\s*)$', l_str, re.I):
+                if l_str and not re.search(r'^(amb|ambt|ambient|noise|noies|db|time|direct|direction|-|\s*)$', l_str, re.I):
                     clean_channel_labels.append(l_str)
 
         def _get_val(d: dict, *keys, default=0.0) -> float:
@@ -226,8 +246,11 @@ CRITICAL RULES:
             direction = str(item.get("direction", "CW") or "CW").strip().upper()
             direction = "CCW" if "CCW" in direction else "CW"
 
+            raw_time_label = str(item.get("time_label", "")).strip()
+            clean_time_label = cls._normalize_time(raw_time_label)
+
             processed_intervals.append(TimeIntervalReading(
-                time_label=str(item.get("time_label", "")).strip(),
+                time_label=clean_time_label,
                 direction=direction,
                 ambient=amb,
                 input_actual=inp,
@@ -265,8 +288,8 @@ CRITICAL RULES:
             test_date=meta_dict.get("test_date", "01/08/2026"),
             product_name=meta_dict.get("product_name", "Planetary Gear Reducer"),
             weight=meta_dict.get("weight", "-"),
-            started_at=meta_dict.get("started_at", "10:00 AM"),
-            direction_changed_at=meta_dict.get("direction_changed_at", "01:30 PM"),
+            started_at=cls._normalize_time(meta_dict.get("started_at", "10:00 AM")),
+            direction_changed_at=cls._normalize_time(meta_dict.get("direction_changed_at", "01:30 PM")),
             duration=meta_dict.get("duration", "6 hours"),
             noise_level_limit=noise_limit,
             noise_level_measured=noise_measured,

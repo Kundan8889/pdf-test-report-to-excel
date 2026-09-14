@@ -44,8 +44,19 @@ class ExcelService:
         ALIGN_LEFT = Alignment(horizontal="left", vertical="center")
         ALIGN_RIGHT = Alignment(horizontal="right", vertical="center")
 
+        # Dynamic Component Groups from metadata.channel_labels
+        raw_labels = metadata.channel_labels or []
+        clean_labels = [
+            str(l).strip() for l in raw_labels
+            if not re.search(r'^(ambient|amb|ambt|noise|noies|sound|db|time|direction|direct|-|\s*)$', str(l).strip(), re.I)
+        ]
+        default_names = ["Input", "Body", "Body", "Bearing cover 1", "Bearing Cover 2", "Bearing Cover 3", "Bearing Cover 4", "Bearing Cover 5", "Output"]
+        final_names = clean_labels if clean_labels else default_names
+        num_channels = len(final_names)
+        total_cols = max(8, 2 + num_channels * 2 + 1)
+
         # 1. Title Banner
-        ws.merge_cells("A1:U1")
+        ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=total_cols)
         ws["A1"] = metadata.test_name or "GEARBOX / MOTOR TEMPERATURE RISE TEST REPORT"
         ws["A1"].font = FONT_TITLE
         ws["A1"].fill = NAVY_FILL
@@ -60,57 +71,57 @@ class ExcelService:
             ("Started At:", metadata.started_at, "Direction Changed At:", metadata.direction_changed_at),
             ("Test Duration:", metadata.duration, "Conclusion:", metadata.conclusion),
         ]
+        mid_split = max(4, total_cols // 2)
         for idx, (k1, v1, k2, v2) in enumerate(info_pairs, start=3):
             ws.row_dimensions[idx].height = 20
-            # Left block: k1 (Cols 1-3), v1 (Cols 4-10)
-            ws.merge_cells(start_row=idx, start_column=1, end_row=idx, end_column=3)
+            # Left block: k1 (Cols 1-2), v1 (Cols 3 to mid_split)
+            ws.merge_cells(start_row=idx, start_column=1, end_row=idx, end_column=2)
             cell_k1 = ws.cell(row=idx, column=1, value=k1)
             cell_k1.font = FONT_BOLD
             cell_k1.fill = GRAY_HEADER_FILL
             cell_k1.alignment = ALIGN_LEFT
 
-            ws.merge_cells(start_row=idx, start_column=4, end_row=idx, end_column=10)
-            cell_v1 = ws.cell(row=idx, column=4, value=str(v1))
+            ws.merge_cells(start_row=idx, start_column=3, end_row=idx, end_column=mid_split)
+            cell_v1 = ws.cell(row=idx, column=3, value=str(v1))
             cell_v1.font = FONT_REGULAR
             cell_v1.alignment = ALIGN_LEFT
 
-            # Right block: k2 (Cols 11-14), v2 (Cols 15-21)
-            ws.merge_cells(start_row=idx, start_column=11, end_row=idx, end_column=14)
-            cell_k2 = ws.cell(row=idx, column=11, value=k2)
+            # Right block: k2 (Cols mid_split+1 to mid_split+2), v2 (Cols mid_split+3 to total_cols)
+            ws.merge_cells(start_row=idx, start_column=mid_split + 1, end_row=idx, end_column=min(mid_split + 2, total_cols - 1))
+            cell_k2 = ws.cell(row=idx, column=mid_split + 1, value=k2)
             cell_k2.font = FONT_BOLD
             cell_k2.fill = GRAY_HEADER_FILL
             cell_k2.alignment = ALIGN_LEFT
 
-            ws.merge_cells(start_row=idx, start_column=15, end_row=idx, end_column=21)
-            cell_v2 = ws.cell(row=idx, column=15, value=str(v2))
+            ws.merge_cells(start_row=idx, start_column=min(mid_split + 3, total_cols), end_row=idx, end_column=total_cols)
+            cell_v2 = ws.cell(row=idx, column=min(mid_split + 3, total_cols), value=str(v2))
             cell_v2.font = FONT_REGULAR
             cell_v2.alignment = ALIGN_LEFT
 
-            for c in range(1, 22):
+            for c in range(1, total_cols + 1):
                 ws.cell(row=idx, column=c).border = BORDER_ALL
 
         # 3. Noise Level & Acceptance Criteria (Rows 8-9)
         ws.row_dimensions[8].height = 20
-        ws.merge_cells("A8:C8")
+        ws.merge_cells(start_row=8, start_column=1, end_row=8, end_column=2)
         ws["A8"] = "Noise level"
         ws["A8"].font = FONT_BOLD
         ws["A8"].alignment = ALIGN_LEFT
         ws["A8"].border = BORDER_ALL
 
-        ws.merge_cells("D8:P8")
-        ws["D8"] = metadata.noise_level_limit
-        ws["D8"].font = FONT_REGULAR
-        ws["D8"].alignment = ALIGN_LEFT
-        ws["D8"].border = BORDER_ALL
+        ws.merge_cells(start_row=8, start_column=3, end_row=8, end_column=max(3, total_cols - 3))
+        ws.cell(row=8, column=3, value=metadata.noise_level_limit).font = FONT_REGULAR
+        ws.cell(row=8, column=3).alignment = ALIGN_LEFT
+        ws.cell(row=8, column=3).border = BORDER_ALL
 
-        ws.merge_cells("Q8:U8")
-        ws["Q8"] = metadata.noise_level_measured
-        ws["Q8"].font = FONT_BOLD
-        ws["Q8"].alignment = ALIGN_RIGHT
-        ws["Q8"].border = BORDER_ALL
+        ws.merge_cells(start_row=8, start_column=max(4, total_cols - 2), end_row=8, end_column=total_cols)
+        c_nmeas = ws.cell(row=8, column=max(4, total_cols - 2), value=metadata.noise_level_measured)
+        c_nmeas.font = FONT_BOLD
+        c_nmeas.alignment = ALIGN_RIGHT
+        c_nmeas.border = BORDER_ALL
 
         ws.row_dimensions[9].height = 20
-        ws.merge_cells("A9:U9")
+        ws.merge_cells(start_row=9, start_column=1, end_row=9, end_column=total_cols)
         ws["A9"] = f"Temperature rise {metadata.temp_rise_limit}"
         ws["A9"].font = FONT_BOLD
         ws["A9"].fill = GRAY_HEADER_FILL
@@ -118,23 +129,12 @@ class ExcelService:
         ws["A9"].border = BORDER_ALL
 
         for r in [8, 9]:
-            for c in range(1, 22):
+            for c in range(1, total_cols + 1):
                 ws.cell(row=r, column=c).border = BORDER_ALL
 
         # 4. Two-Tier Header Matrix (Rows 10-11)
         ws.row_dimensions[10].height = 22
         ws.row_dimensions[11].height = 20
-
-        # Dynamic Component Groups from metadata.channel_labels
-        raw_labels = metadata.channel_labels or []
-        clean_labels = [
-            str(l).strip() for l in raw_labels
-            if not re.search(r'^(ambient|amb|ambt|noise|noies|sound|db|time|direction|direct|-|\s*)$', str(l).strip(), re.I)
-        ]
-        default_names = ["Input", "Body", "Body", "Bearing cover 1", "Bearing Cover 2", "Bearing Cover 3", "Bearing Cover 4", "Bearing Cover 5", "Output"]
-        final_names = clean_labels if clean_labels else default_names
-        num_channels = len(final_names)
-        total_cols = 2 + num_channels * 2 + 1
 
         components = [
             (name, 3 + i * 2, 4 + i * 2)
@@ -148,7 +148,7 @@ class ExcelService:
         c_time_head.alignment = ALIGN_CENTER
         c_time_head.fill = GRAY_HEADER_FILL
 
-        # Col 2: Direction (Clean header as requested)
+        # Col 2: Direction
         ws.merge_cells(start_row=10, start_column=2, end_row=11, end_column=2)
         c_dir_head = ws.cell(row=10, column=2, value="Direction")
         c_dir_head.font = FONT_HEADER
@@ -233,28 +233,24 @@ class ExcelService:
 
         # 6. Lubrication & Inspection Footer
         ws.row_dimensions[current_row].height = 20
-        ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=3)
+        ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=2)
         ws.cell(row=current_row, column=1, value="Lubrication leakage").font = FONT_BOLD
         ws.cell(row=current_row, column=1).alignment = ALIGN_LEFT
 
-        ws.merge_cells(start_row=current_row, start_column=4, end_row=current_row, end_column=12)
-        ws.cell(row=current_row, column=4, value=metadata.lubrication_leakage).font = FONT_REGULAR
-        ws.cell(row=current_row, column=4).alignment = ALIGN_CENTER
+        ws.merge_cells(start_row=current_row, start_column=3, end_row=current_row, end_column=total_cols)
+        ws.cell(row=current_row, column=3, value=metadata.lubrication_leakage or "No leakage").font = FONT_REGULAR
+        ws.cell(row=current_row, column=3).alignment = ALIGN_CENTER
 
-        ws.merge_cells(start_row=current_row, start_column=13, end_row=current_row, end_column=21)
-        ws.cell(row=current_row, column=13, value=metadata.lubrication_leakage).font = FONT_REGULAR
-        ws.cell(row=current_row, column=13).alignment = ALIGN_CENTER
-
-        for c in range(1, 22):
+        for c in range(1, total_cols + 1):
             ws.cell(row=current_row, column=c).border = BORDER_ALL
 
         # Compact Column Widths optimized for A4 Landscape
-        ws.column_dimensions["A"].width = 10.0  # Time
-        ws.column_dimensions["B"].width = 8.5   # Direction (CW / CCW)
-        for col_idx in range(3, 21):
+        ws.column_dimensions["A"].width = 11.0  # Time
+        ws.column_dimensions["B"].width = 9.0   # Direction (CW / CCW)
+        for col_idx in range(3, total_cols):
             col_letter = get_column_letter(col_idx)
-            ws.column_dimensions[col_letter].width = 6.4  # Actual Temp / Temp Rise
-        ws.column_dimensions["U"].width = 8.0   # Ambient
+            ws.column_dimensions[col_letter].width = 7.5  # Actual Temp / Temp Rise
+        ws.column_dimensions[get_column_letter(total_cols)].width = 9.0   # Ambient
 
         # A4 Landscape Print Setup to guarantee 1-page width fitting
         ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE

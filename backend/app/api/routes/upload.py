@@ -3,6 +3,8 @@ from app.models.schemas import APIResponse
 from app.utils.file_utils import generate_file_id, validate_pdf_file, save_uploaded_pdf
 from app.services.extraction_service import ExtractionService
 
+from starlette.concurrency import run_in_threadpool
+
 router = APIRouter(prefix="/upload", tags=["Upload"])
 
 @router.post("", response_model=APIResponse)
@@ -33,7 +35,7 @@ async def upload_pdf(file: UploadFile = File(...)):
     saved_path, stored_filename = save_uploaded_pdf(file_id, file_bytes)
 
     try:
-        extracted = ExtractionService.extract(saved_path, file_id, filename)
+        extracted = await run_in_threadpool(ExtractionService.extract, saved_path, file_id, filename)
         return APIResponse(
             success=True,
             message="PDF report uploaded and processed successfully.",

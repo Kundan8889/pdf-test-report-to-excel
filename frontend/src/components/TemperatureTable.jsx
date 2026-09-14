@@ -784,7 +784,7 @@ export default function TemperatureTable({
                 colSpan="2"
                 style={{
                   border: "1px solid var(--table-inner-border)",
-                  padding: "0.45rem",
+                  padding: "0.45rem 0.6rem",
                   fontWeight: 700,
                   textAlign: "left",
                   color: "var(--text-primary)",
@@ -793,23 +793,13 @@ export default function TemperatureTable({
                 Lubrication leakage
               </td>
               <td
-                colSpan="10"
+                colSpan={dynamicChannelList.length * 2 + 2}
                 style={{
                   border: "1px solid var(--table-inner-border)",
                   padding: "0.45rem",
                   fontWeight: 600,
                   color: "var(--success-text)",
-                }}
-              >
-                {metadata?.lubrication_leakage || "No leakage"}
-              </td>
-              <td
-                colSpan="10"
-                style={{
-                  border: "1px solid var(--table-inner-border)",
-                  padding: "0.45rem",
-                  fontWeight: 600,
-                  color: "var(--success-text)",
+                  textAlign: "center",
                 }}
               >
                 {metadata?.lubrication_leakage || "No leakage"}
