@@ -23,6 +23,8 @@ class TimeIntervalReading(BaseModel):
     bc5_rise: float = Field(-1.5, description="Bearing Cover 5 Temp Rise")
     output_actual: float = Field(26.5, description="Output Actual Temp")
     output_rise: float = Field(-1.5, description="Output Temp Rise")
+    noise: Optional[float] = Field(None, description="Noise level in dB for this interval")
+    vibration: Optional[float] = Field(None, description="Vibration reading (e.g. cm/sec) for this interval")
 
 class TestMetadata(BaseModel):
     report_number: str = Field("TR-2026-001", description="Test Report Reference Number")

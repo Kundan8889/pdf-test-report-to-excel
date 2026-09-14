@@ -89,7 +89,8 @@ Extract the EXACT data in the following JSON format:
         "R5": 24.3,
         "O/P Pinion": 25.0
       },
-      "noise": 78.0
+      "noise": 72.0,
+      "vibration": 0.59
     }
   ]
 }
@@ -98,11 +99,12 @@ CRITICAL RULES:
 1. DYNAMIC COMPONENT CHANNELS:
    - Identify each individual temperature component column in the table (e.g. Input, R1, R2, R3, R4, R5, O/P Pinion).
    - In 'metadata.channel_labels', return ONLY the array of actual component column names present in the table.
-   - DO NOT include 'Ambient'/'Ambt' or 'Noise'/'Noies' in channel_labels.
+   - DO NOT include 'Ambient'/'Ambt' or 'Noise'/'Noies' or 'Vibration' in channel_labels.
 
-2. AMBIENT & NOISE SEPARATION:
-   - 'Ambt' / 'Ambient' (e.g. 24.6, 26.0, 26.4...) is the reference ambient. Store this ONLY in 'ambient'. NEVER put ambient into 'channel_readings'!
-   - 'Noies' / 'Noise' (e.g. 78, 78.4, 78.5) is the sound level in dB. Store in 'noise' and set 'metadata.noise_level_measured' to the peak reading (e.g. '78.5 dB').
+2. AMBIENT, NOISE & VIBRATION SEPARATION:
+   - 'Ambt' / 'Ambient' (e.g. 28.0, 24.6...) is the reference ambient. Store this ONLY in 'ambient'. NEVER put ambient into 'channel_readings'!
+   - 'Noies' / 'Noise' column (e.g. 72, 72.7, 71.3) is the sound level in dB. Store in 'noise' for each row AND set 'metadata.noise_level_measured' to the peak reading (e.g. '72.7 dB').
+   - 'Vibration' column (if present, e.g. 0.59, 0.69, 0.50) is stored in 'vibration' for each row.
 
 3. ACCURATE COLUMN VALUE MAPPING:
    - In 'channel_readings', map each component header name to its exact cell value in that row.
@@ -314,8 +316,9 @@ CRITICAL RULES:
 
         for idx, item in enumerate(raw_intervals):
             amb = _get_val(item, "ambient", "ambient_temp", "amb", default=28.0)
-            noise_val = _get_val(item, "noise", "noies", "sound", default=0.0)
-            if noise_val > 0:
+            noise_val = _get_val(item, "noise", "noies", "sound", default=None)
+            vib_val = _get_val(item, "vibration", "vib", default=None)
+            if noise_val is not None and noise_val > 0:
                 measured_noises.append(noise_val)
 
             readings_map = item.get("channel_readings") or {}
@@ -377,8 +380,11 @@ CRITICAL RULES:
                 bc5_actual=bc5,
                 bc5_rise=round(bc5 - amb, 1) if bc5 else 0.0,
                 output_actual=out,
-                output_rise=round(out - amb, 1) if out else 0.0
+                output_rise=round(out - amb, 1) if out else 0.0,
+                noise=noise_val,
+                vibration=vib_val
             ))
+
 
         noise_measured = str(meta_dict.get("noise_level_measured") or "").strip()
         if (not noise_measured or noise_measured in ["-", "None"]) and measured_noises:

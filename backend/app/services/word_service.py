@@ -86,16 +86,31 @@ class WordService:
         default_names = ["Input", "Body", "Body", "Bearing cover 1", "Bearing Cover 2", "Bearing Cover 3", "Bearing Cover 4", "Bearing Cover 5", "Output"]
         final_names = clean_labels if clean_labels else default_names
         num_channels = len(final_names)
-        total_cols = 2 + num_channels * 2 + 1
+
+        # Check if Noise / Vibration columns are present
+        has_noise_col = any(getattr(item, 'noise', None) not in [None, ''] for item in intervals) or bool(metadata.noise_level_measured and metadata.noise_level_measured != '-')
+        has_vib_col = any(getattr(item, 'vibration', None) not in [None, ''] for item in intervals)
+
+        extra_col_count = 1 + (1 if has_noise_col else 0) + (1 if has_vib_col else 0)
+        total_cols = 2 + num_channels * 2 + extra_col_count
+
+        ambient_c = 2 + num_channels * 2
+        noise_c = ambient_c + 1 if has_noise_col else None
+        vib_c = (noise_c + 1) if (has_noise_col and has_vib_col) else (ambient_c + 1 if has_vib_col else None)
 
         # Total printable width = 11.693 - 0.90 = 10.793 inches
-        remaining_w = 10.793 - 0.75 - 0.65 - 0.663
+        fixed_w = 0.75 + 0.65 + 0.60 + (0.60 if has_noise_col else 0) + (0.65 if has_vib_col else 0)
+        remaining_w = max(2.0, 10.793 - fixed_w)
         ch_w = Inches(remaining_w / (num_channels * 2)) if num_channels > 0 else Inches(0.485)
 
         col_widths = [Inches(0.75), Inches(0.65)]
         for _ in range(num_channels * 2):
             col_widths.append(ch_w)
-        col_widths.append(Inches(0.663))
+        col_widths.append(Inches(0.60)) # Ambient
+        if has_noise_col:
+            col_widths.append(Inches(0.60)) # Noise
+        if has_vib_col:
+            col_widths.append(Inches(0.65)) # Vibration
 
         # Calculate total rows required:
         # Title (1) + Info with Noise (5) + Temp Limit (1) + Table Header (2) + Intervals (N) + Lubrication (1)
@@ -220,9 +235,21 @@ class WordService:
             format_cell(sub_c2, "Temp\nRise", bold=True, bg_color="E2E8F0", align=WD_ALIGN_PARAGRAPH.CENTER, font_size=7.5)
 
         # Ambient Col
-        c_amb_h = table.cell(head_row1, total_cols - 1)
-        c_amb_h.merge(table.cell(head_row2, total_cols - 1))
+        c_amb_h = table.cell(head_row1, ambient_c)
+        c_amb_h.merge(table.cell(head_row2, ambient_c))
         format_cell(c_amb_h, "Ambient", bold=True, bg_color="E2E8F0", align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
+
+        # Noise Col
+        if noise_c is not None:
+            c_noise_h = table.cell(head_row1, noise_c)
+            c_noise_h.merge(table.cell(head_row2, noise_c))
+            format_cell(c_noise_h, "Noise\n(dB)", bold=True, bg_color="E2E8F0", align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
+
+        # Vibration Col
+        if vib_c is not None:
+            c_vib_h = table.cell(head_row1, vib_c)
+            c_vib_h.merge(table.cell(head_row2, vib_c))
+            format_cell(c_vib_h, "Vibration\n(cm/s)", bold=True, bg_color="E2E8F0", align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
 
         current_row_idx += 2
 
@@ -258,23 +285,44 @@ class WordService:
 
                 format_cell(table.cell(current_row_idx, 2 + ch_i * 2), f"{act_v:.1f}", bg_color=r_bg, align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
 
+                # Temp rise color
+                rise_color = (0xDC, 0x26, 0x26) if rise_v > threshold else (0x02, 0x84, 0xC7)
                 rise_str = f"+{rise_v:.1f}" if rise_v > 0 else f"{rise_v:.1f}"
-                rise_cell = table.cell(current_row_idx, 3 + ch_i * 2)
-                if rise_v > threshold:
-                    format_cell(rise_cell, rise_str, bold=True, color_rgb=(0xDC, 0x26, 0x26), bg_color="FEE2E2", align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
-                else:
-                    format_cell(rise_cell, rise_str, color_rgb=(0x03, 0x69, 0xA1), bg_color="F0F9FF", align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
+                format_cell(table.cell(current_row_idx, 3 + ch_i * 2), rise_str, bold=True, color_rgb=rise_color, bg_color="F0F9FF" if rise_v <= threshold else "FEF2F2", align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
 
             # Ambient
-            format_cell(table.cell(current_row_idx, total_cols - 1), f"{item.ambient:.1f}", bg_color=r_bg, align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
+            amb_v = item.ambient
+            format_cell(table.cell(current_row_idx, ambient_c), f"{amb_v:.1f}" if isinstance(amb_v, (int, float)) else str(amb_v), bold=True, color_rgb=(0x25, 0x63, 0xEB), bg_color=r_bg, align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
+
+            # Noise
+            if noise_c is not None:
+                n_val = getattr(item, 'noise', None)
+                if n_val is None or n_val == 0.0:
+                    n_val = metadata.noise_level_measured or "-"
+                    try:
+                        n_val = f"{float(str(n_val).replace('dB', '').strip()):.1f}"
+                    except Exception:
+                        pass
+                else:
+                    n_val = f"{float(n_val):.1f}"
+                format_cell(table.cell(current_row_idx, noise_c), str(n_val), bold=True, color_rgb=(0x15, 0x80, 0x3D), bg_color=r_bg, align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
+
+            # Vibration
+            if vib_c is not None:
+                v_val = getattr(item, 'vibration', None)
+                v_str = f"{float(v_val):.2f}" if v_val is not None else "-"
+                format_cell(table.cell(current_row_idx, vib_c), v_str, bg_color=r_bg, align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
 
             current_row_idx += 1
 
-        # 7. Lubrication & Status Summary Footer
-        c_lub = table.cell(current_row_idx, 0)
-        for c in range(1, total_cols):
-            c_lub.merge(table.cell(current_row_idx, c))
-        format_cell(c_lub, f"Oil / Lubrication: {metadata.lubrication_leakage or 'No leakage'}  |  Final Result: {metadata.conclusion or 'COMPLIES'}", bold=True, bg_color="F1F5F9", font_size=8.0)
+        # 7. Lubrication Footer
+        c_l1 = table.cell(current_row_idx, 0)
+        c_l1.merge(table.cell(current_row_idx, 1))
+        format_cell(c_l1, "Lubrication leakage", bold=True, font_size=8.0)
+
+        c_l2 = table.cell(current_row_idx, 2)
+        c_l2.merge(table.cell(current_row_idx, total_cols - 1))
+        format_cell(c_l2, metadata.lubrication_leakage or "No leakage", bold=True, color_rgb=(0x05, 0x96, 0x69), align=WD_ALIGN_PARAGRAPH.CENTER, font_size=8.0)
 
         out_path = get_output_path(output_filename)
         doc.save(str(out_path))

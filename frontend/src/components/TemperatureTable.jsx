@@ -232,6 +232,10 @@ export default function TemperatureTable({
     onIntervalsChange(updated);
   };
 
+  const hasVibration = intervals.some(
+    (r) => r.vibration !== undefined && r.vibration !== null && r.vibration !== "" && r.vibration !== 0
+  );
+
   const handleAddRow = () => {
     if (!onIntervalsChange) return;
     const lastRow = intervals[intervals.length - 1];
@@ -240,6 +244,8 @@ export default function TemperatureTable({
       time_label: `Interval ${intervals.length + 1}`,
       direction: 'CW',
       ambient: amb,
+      noise: lastRow ? lastRow.noise : 72.0,
+      vibration: lastRow ? lastRow.vibration : 0.50,
       input_actual: lastRow ? lastRow.input_actual : 28.0,
       input_rise: 0.0,
       body_actual: lastRow ? lastRow.body_actual : 27.0,
@@ -261,6 +267,7 @@ export default function TemperatureTable({
     };
     onIntervalsChange([...intervals, nextRow]);
   };
+
 
   const handleDeleteRow = (index) => {
     if (!onIntervalsChange || intervals.length <= 1) return;
@@ -560,6 +567,36 @@ export default function TemperatureTable({
                 rowSpan="2"
                 style={{
                   border: "1px solid var(--table-inner-border)",
+                  padding: "0.6rem 0.5rem",
+                  minWidth: "90px",
+                  width: "90px",
+                  fontWeight: 700,
+                  fontSize: "0.85rem",
+                  color: "var(--success-text)"
+                }}
+              >
+                Noise (dB)
+              </th>
+              {hasVibration && (
+                <th
+                  rowSpan="2"
+                  style={{
+                    border: "1px solid var(--table-inner-border)",
+                    padding: "0.6rem 0.5rem",
+                    minWidth: "95px",
+                    width: "95px",
+                    fontWeight: 700,
+                    fontSize: "0.85rem",
+                    color: "var(--text-primary)"
+                  }}
+                >
+                  Vibration (cm/s)
+                </th>
+              )}
+              <th
+                rowSpan="2"
+                style={{
+                  border: "1px solid var(--table-inner-border)",
                   padding: "0.6rem 0.4rem",
                   minWidth: "60px",
                   width: "60px",
@@ -738,6 +775,8 @@ export default function TemperatureTable({
                   style={{
                     border: "1px solid var(--table-inner-border)",
                     padding: "0.25rem",
+                    minWidth: "95px",
+                    width: "95px"
                   }}
                 >
                   <input
@@ -762,6 +801,94 @@ export default function TemperatureTable({
                     }}
                   />
                 </td>
+
+                {/* Noise Column */}
+                <td
+                  style={{
+                    border: "1px solid var(--table-inner-border)",
+                    padding: "0.25rem",
+                    minWidth: "90px",
+                    width: "90px"
+                  }}
+                >
+                  <input
+                    type="text"
+                    className="table-input-field"
+                    placeholder="e.g. 72.0"
+                    value={row.noise !== "" && row.noise !== undefined && row.noise !== null ? (typeof row.noise === "number" ? row.noise.toFixed(1) : row.noise) : ""}
+                    onChange={(e) => {
+                      const updated = [...intervals];
+                      updated[rIdx] = {
+                        ...updated[rIdx],
+                        noise: e.target.value,
+                      };
+                      onIntervalsChange(updated);
+                    }}
+                    onBlur={(e) => {
+                      const num = parseFloat(e.target.value);
+                      if (!isNaN(num)) {
+                        const updated = [...intervals];
+                        updated[rIdx] = {
+                          ...updated[rIdx],
+                          noise: parseFloat(num.toFixed(1)),
+                        };
+                        onIntervalsChange(updated);
+                      }
+                    }}
+                    style={{
+                      fontWeight: 700,
+                      color: "var(--success-text)",
+                      backgroundColor: "var(--bg-card)",
+                      border: "1px solid var(--border-color)",
+                      borderRadius: "0.35rem"
+                    }}
+                  />
+                </td>
+
+                {/* Vibration Column */}
+                {hasVibration && (
+                  <td
+                    style={{
+                      border: "1px solid var(--table-inner-border)",
+                      padding: "0.25rem",
+                      minWidth: "95px",
+                      width: "95px"
+                    }}
+                  >
+                    <input
+                      type="text"
+                      className="table-input-field"
+                      placeholder="e.g. 0.59"
+                      value={row.vibration !== "" && row.vibration !== undefined && row.vibration !== null ? (typeof row.vibration === "number" ? row.vibration.toFixed(2) : row.vibration) : ""}
+                      onChange={(e) => {
+                        const updated = [...intervals];
+                        updated[rIdx] = {
+                          ...updated[rIdx],
+                          vibration: e.target.value,
+                        };
+                        onIntervalsChange(updated);
+                      }}
+                      onBlur={(e) => {
+                        const num = parseFloat(e.target.value);
+                        if (!isNaN(num)) {
+                          const updated = [...intervals];
+                          updated[rIdx] = {
+                            ...updated[rIdx],
+                            vibration: parseFloat(num.toFixed(2)),
+                          };
+                          onIntervalsChange(updated);
+                        }
+                      }}
+                      style={{
+                        fontWeight: 600,
+                        color: "var(--text-primary)",
+                        backgroundColor: "var(--bg-card)",
+                        border: "1px solid var(--border-color)",
+                        borderRadius: "0.35rem"
+                      }}
+                    />
+                  </td>
+                )}
 
                 {/* Delete Row Action */}
                 <td
@@ -814,7 +941,7 @@ export default function TemperatureTable({
                 Lubrication leakage
               </td>
               <td
-                colSpan={dynamicChannelList.length * 2 + 2}
+                colSpan={dynamicChannelList.length * 2 + 2 + (hasVibration ? 1 : 0) + 1}
                 style={{
                   border: "1px solid var(--table-inner-border)",
                   padding: "0.6rem 0.85rem",
@@ -835,3 +962,4 @@ export default function TemperatureTable({
     </div>
   );
 }
+

@@ -53,7 +53,18 @@ class ExcelService:
         default_names = ["Input", "Body", "Body", "Bearing cover 1", "Bearing Cover 2", "Bearing Cover 3", "Bearing Cover 4", "Bearing Cover 5", "Output"]
         final_names = clean_labels if clean_labels else default_names
         num_channels = len(final_names)
-        total_cols = max(8, 2 + num_channels * 2 + 1)
+
+        # Check if Noise / Vibration columns are present
+        has_noise_col = any(getattr(item, 'noise', None) not in [None, ''] for item in intervals) or bool(metadata.noise_level_measured and metadata.noise_level_measured != '-')
+        has_vib_col = any(getattr(item, 'vibration', None) not in [None, ''] for item in intervals)
+
+        extra_col_count = 1 + (1 if has_noise_col else 0) + (1 if has_vib_col else 0)
+        total_cols = max(8, 2 + num_channels * 2 + extra_col_count)
+
+        # Column indices
+        ambient_col = 3 + num_channels * 2
+        noise_col = ambient_col + 1 if has_noise_col else None
+        vib_col = (noise_col + 1) if (has_noise_col and has_vib_col) else (ambient_col + 1 if has_vib_col else None)
 
         # 1. Title Banner
         ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=total_cols)
@@ -183,11 +194,27 @@ class ExcelService:
             c2.fill = GRAY_HEADER_FILL
 
         # Ambient Col
-        ws.merge_cells(start_row=h_row1, start_column=total_cols, end_row=h_row2, end_column=total_cols)
-        amb_cell = ws.cell(row=h_row1, column=total_cols, value="Ambient")
+        ws.merge_cells(start_row=h_row1, start_column=ambient_col, end_row=h_row2, end_column=ambient_col)
+        amb_cell = ws.cell(row=h_row1, column=ambient_col, value="Ambient")
         amb_cell.font = FONT_HEADER
         amb_cell.alignment = ALIGN_CENTER
         amb_cell.fill = GRAY_HEADER_FILL
+
+        # Noise Col
+        if noise_col:
+            ws.merge_cells(start_row=h_row1, start_column=noise_col, end_row=h_row2, end_column=noise_col)
+            noise_cell = ws.cell(row=h_row1, column=noise_col, value="Noise (dB)")
+            noise_cell.font = FONT_HEADER
+            noise_cell.alignment = ALIGN_CENTER
+            noise_cell.fill = GRAY_HEADER_FILL
+
+        # Vibration Col
+        if vib_col:
+            ws.merge_cells(start_row=h_row1, start_column=vib_col, end_row=h_row2, end_column=vib_col)
+            vib_cell = ws.cell(row=h_row1, column=vib_col, value="Vibration (cm/s)")
+            vib_cell.font = FONT_HEADER
+            vib_cell.alignment = ALIGN_CENTER
+            vib_cell.fill = GRAY_HEADER_FILL
 
         for r in [h_row1, h_row2]:
             for c in range(1, total_cols + 1):
@@ -227,7 +254,24 @@ class ExcelService:
                 ws.cell(row=current_row, column=4 + ch_i * 2, value=rise_v).alignment = ALIGN_CENTER
 
             # Ambient
-            ws.cell(row=current_row, column=total_cols, value=item.ambient).alignment = ALIGN_CENTER
+            ws.cell(row=current_row, column=ambient_col, value=item.ambient).alignment = ALIGN_CENTER
+
+            # Noise
+            if noise_col:
+                n_val = getattr(item, 'noise', None)
+                if n_val is None or n_val == 0.0:
+                    # fallback to max noise if available
+                    n_val = metadata.noise_level_measured or "-"
+                    try:
+                        n_val = float(str(n_val).replace("dB", "").strip())
+                    except Exception:
+                        pass
+                ws.cell(row=current_row, column=noise_col, value=n_val).alignment = ALIGN_CENTER
+
+            # Vibration
+            if vib_col:
+                v_val = getattr(item, 'vibration', None) or "-"
+                ws.cell(row=current_row, column=vib_col, value=v_val).alignment = ALIGN_CENTER
 
             for c in range(1, total_cols + 1):
                 cell = ws.cell(row=current_row, column=c)
@@ -236,7 +280,7 @@ class ExcelService:
                 cell.alignment = ALIGN_CENTER
                 if r_fill.fill_type:
                     cell.fill = r_fill
-                if c >= 3:
+                if c >= 3 and isinstance(cell.value, (int, float)):
                     cell.number_format = '0.0'
 
             current_row += 1
