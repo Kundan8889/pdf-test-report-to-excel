@@ -137,14 +137,13 @@ class WordService:
         format_cell(title_cell, metadata.test_name or "GEARBOX / MOTOR TEMPERATURE RISE TEST REPORT", bold=True, color_rgb=(0xFF, 0xFF, 0xFF), bg_color="1E3A8A", align=WD_ALIGN_PARAGRAPH.CENTER, font_size=12.0)
         current_row_idx += 1
 
-        # 2. Info Block (Rows 1 to 5)
+        # 2. Info Block (Rows 1 to 4)
         serial_val = metadata.serial_number or metadata.report_number or ""
         info_pairs = [
             ("Serial / Report No:", serial_val, "Date of Test:", metadata.test_date),
             ("Product / Assembly:", metadata.product_name, "Weight:", metadata.weight),
             ("Started At:", metadata.started_at, "Direction Changed At:", metadata.direction_changed_at),
             ("Test Duration:", metadata.duration, "Conclusion:", metadata.conclusion),
-            ("Noise Level Limit:", metadata.noise_level_limit or "< 85 dB", "Measured Noise:", metadata.noise_level_measured or "-"),
         ]
         mid_split = max(1, total_cols // 2)
         for k1, v1, k2, v2 in info_pairs:
@@ -170,7 +169,21 @@ class WordService:
 
             current_row_idx += 1
 
-        # 3. Temp Rise Limit (Row 6)
+        # 3. Noise Level (Row 5)
+        c_n1 = table.cell(current_row_idx, 0)
+        c_n1.merge(table.cell(current_row_idx, min(2, mid_split - 2)))
+        format_cell(c_n1, "Noise level", bold=True, font_size=8.0)
+
+        c_n2 = table.cell(current_row_idx, min(3, mid_split - 1))
+        c_n2.merge(table.cell(current_row_idx, mid_split - 1))
+        format_cell(c_n2, metadata.noise_level_limit or "< 85 dB", font_size=8.0)
+
+        c_n3 = table.cell(current_row_idx, mid_split)
+        c_n3.merge(table.cell(current_row_idx, total_cols - 1))
+        format_cell(c_n3, metadata.noise_level_measured or "-", bold=True, align=WD_ALIGN_PARAGRAPH.LEFT, font_size=8.0)
+        current_row_idx += 1
+
+        # 4. Temp Rise Limit (Row 6)
         c_tlim = table.cell(current_row_idx, 0)
         for c in range(1, total_cols):
             c_tlim.merge(table.cell(current_row_idx, c))

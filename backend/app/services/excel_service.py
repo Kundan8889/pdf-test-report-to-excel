@@ -63,14 +63,13 @@ class ExcelService:
         ws["A1"].alignment = ALIGN_CENTER
         ws.row_dimensions[1].height = 26
 
-        # 2. General Info Box (Rows 3-7)
+        # 2. General Info Box (Rows 3-6)
         serial_val = metadata.serial_number or metadata.report_number or ""
         info_pairs = [
             ("Serial / Report No:", serial_val, "Date of Test:", metadata.test_date),
             ("Product / Assembly:", metadata.product_name, "Weight:", metadata.weight),
             ("Started At:", metadata.started_at, "Direction Changed At:", metadata.direction_changed_at),
             ("Test Duration:", metadata.duration, "Conclusion:", metadata.conclusion),
-            ("Noise Level Limit:", metadata.noise_level_limit or "< 85 dB", "Measured Noise:", metadata.noise_level_measured or "-"),
         ]
         mid_split = max(4, total_cols // 2)
         current_row = 3
@@ -104,8 +103,32 @@ class ExcelService:
                 ws.cell(row=idx, column=c).border = BORDER_ALL
             current_row = idx + 1
 
-        # 3. Acceptance Criteria Banner (Row 8)
+        # 3. Noise Level Row (Row 7)
+        noise_row = current_row
+        ws.row_dimensions[noise_row].height = 20
+        # Left label: Cols 1-2 ("Noise level")
+        ws.merge_cells(start_row=noise_row, start_column=1, end_row=noise_row, end_column=2)
+        cell_nl = ws.cell(row=noise_row, column=1, value="Noise level")
+        cell_nl.font = FONT_BOLD
+        cell_nl.alignment = ALIGN_LEFT
+
+        # Left value: Cols 3 to mid_split ("< 85 dB")
+        ws.merge_cells(start_row=noise_row, start_column=3, end_row=noise_row, end_column=mid_split)
+        cell_nlim = ws.cell(row=noise_row, column=3, value=metadata.noise_level_limit or "< 85 dB")
+        cell_nlim.font = FONT_REGULAR
+        cell_nlim.alignment = ALIGN_LEFT
+
+        # Right value: Cols mid_split + 1 to total_cols (Measured noise e.g. "78.5 dB"), left-aligned under Date/Weight/Conclusion!
+        ws.merge_cells(start_row=noise_row, start_column=mid_split + 1, end_row=noise_row, end_column=total_cols)
+        c_nmeas = ws.cell(row=noise_row, column=mid_split + 1, value=metadata.noise_level_measured or "-")
+        c_nmeas.font = FONT_BOLD
+        c_nmeas.alignment = ALIGN_LEFT
+
+        for c in range(1, total_cols + 1):
+            ws.cell(row=noise_row, column=c).border = BORDER_ALL
         current_row += 1
+
+        # 4. Acceptance Criteria Banner (Row 8)
         temp_limit_row = current_row
         ws.row_dimensions[temp_limit_row].height = 20
         ws.merge_cells(start_row=temp_limit_row, start_column=1, end_row=temp_limit_row, end_column=total_cols)
@@ -116,7 +139,7 @@ class ExcelService:
         for c in range(1, total_cols + 1):
             ws.cell(row=temp_limit_row, column=c).border = BORDER_ALL
 
-        # 4. Two-Tier Header Matrix (Rows 10-11 / temp_limit_row + 1)
+        # 5. Two-Tier Header Matrix (Rows 9-10 / temp_limit_row + 1)
         h_row1 = temp_limit_row + 1
         h_row2 = temp_limit_row + 2
         ws.row_dimensions[h_row1].height = 22
