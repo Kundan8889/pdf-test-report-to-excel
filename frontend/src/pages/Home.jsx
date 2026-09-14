@@ -327,18 +327,9 @@ export default function Home() {
     <div className="app-container">
       <header className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.25rem' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <h1 className="header-title-gradient" style={{ margin: 0 }}>
-              PDF Test Report to Excel &amp; Word
-            </h1>
-            <div
-              className={`badge ${isServerOnline ? 'badge-success' : 'badge-danger'}`}
-              style={{ padding: '0.25rem 0.65rem', fontSize: '0.75rem' }}
-            >
-              <span className={isServerOnline ? 'pulse-indicator' : ''} />
-              <span>{isServerOnline ? 'FastAPI Engine Live' : 'Backend Offline'}</span>
-            </div>
-          </div>
+          <h1 className="header-title-gradient" style={{ margin: 0 }}>
+            PDF Test Report to Excel &amp; Word
+          </h1>
           <p style={{ color: 'var(--text-secondary)', margin: '0.35rem 0 0 0', fontSize: '0.95rem' }}>
             Convert laboratory thermal &amp; temperature rise test reports into structured Excel (.xlsx) &amp; Word (.docx) documents
           </p>
