@@ -30,16 +30,87 @@ export default function Home() {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
-  // Extracted Application State
+  // Extracted Application State with localStorage persistence
+  const STORAGE_KEY = 'pdf_test_report_current_data';
+  const ORIG_KEY = 'pdf_test_report_orig_data';
+
   const [currentFile, setCurrentFile] = useState(null);
-  const [processingStage, setProcessingStage] = useState('idle');
-  const [uploadProgressPercent, setUploadProgressPercent] = useState(0);
+  const [processingStage, setProcessingStage] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? 'completed' : 'idle';
+    } catch {
+      return 'idle';
+    }
+  });
+  const [uploadProgressPercent, setUploadProgressPercent] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? 100 : 0;
+    } catch {
+      return 0;
+    }
+  });
   const [processingDetails, setProcessingDetails] = useState(null);
-  const [extractionResult, setExtractionResult] = useState(null);
-  const [originalExtraction, setOriginalExtraction] = useState(null);
-  const [metadata, setMetadata] = useState(null);
-  const [intervals, setIntervals] = useState([]);
-  const [warnings, setWarnings] = useState([]);
+
+  const [extractionResult, setExtractionResult] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [originalExtraction, setOriginalExtraction] = useState(() => {
+    try {
+      const saved = localStorage.getItem(ORIG_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [metadata, setMetadata] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved).metadata || null : null;
+    } catch {
+      return null;
+    }
+  });
+  const [intervals, setIntervals] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved).intervals || [] : [];
+    } catch {
+      return [];
+    }
+  });
+  const [warnings, setWarnings] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved).warnings || [] : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Automatically sync to localStorage whenever state changes
+  useEffect(() => {
+    if (metadata && intervals && intervals.length > 0) {
+      try {
+        const payload = {
+          metadata,
+          intervals,
+          warnings,
+          file_id: extractionResult?.file_id || 'restored_session',
+          original_filename: extractionResult?.original_filename || currentFile?.name || 'Report.pdf',
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      } catch (e) {
+        console.error('Failed to save to localStorage:', e);
+      }
+    }
+  }, [metadata, intervals, warnings, extractionResult, currentFile]);
 
   // Check Backend Health on mount
   useEffect(() => {
@@ -113,6 +184,13 @@ export default function Home() {
         setMetadata(data.metadata || null);
         setIntervals(data.intervals || []);
         setWarnings(data.warnings || []);
+
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+          localStorage.setItem(ORIG_KEY, JSON.stringify(data));
+        } catch (e) {
+          console.error('Storage error:', e);
+        }
       } else {
         setProcessingStage('error');
         setProcessingDetails({
@@ -148,6 +226,12 @@ export default function Home() {
     setIntervals([]);
     setWarnings([]);
     setErrorMessage('');
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(ORIG_KEY);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleResetAll = () => {

@@ -57,7 +57,7 @@ Extract the EXACT data in the following JSON format:
     "test_date": "DD/MM/YYYY format, e.g. 24/08/2026 or 31/08/2026",
     "product_name": "Product description or Type, e.g. Planetary - helical or Planetary Gear Reducer",
     "weight": "Weight with units or '-' if empty, e.g. 877+47 kg or 620 kg",
-    "started_at": "Started time, e.g. 09:30 AM or 10:50 am",
+    "started_at": "Started time, e.g. 09:30 am or 10:50 am",
     "direction_changed_at": "Direction changed time if noted, else '-'",
     "duration": "Test duration string from document",
     "noise_level_limit": "< 85 dB",
@@ -77,18 +77,19 @@ Extract the EXACT data in the following JSON format:
   },
   "intervals": [
     {
-      "time_label": "Exact time from row, e.g. 9.30, 10.00, 10.30, 11.00, 11.30, 12 pm, 12.30",
+      "time_label": "Exact time, e.g. 9.30 am, 10.00 am, 11.30 am, 12.00 pm, 12.30 pm, 1.05 pm",
       "direction": "CW or CCW",
       "ambient": 24.6,
-      "input_actual": 25.1,
-      "body_actual": 25.5,
-      "body2_actual": 25.0,
-      "bc1_actual": 24.3,
-      "bc2_actual": 24.5,
-      "bc3_actual": 24.3,
-      "bc4_actual": 25.0,
-      "bc5_actual": null,
-      "output_actual": null
+      "channel_readings": {
+        "Input": 25.1,
+        "R1": 25.5,
+        "R2": 25.0,
+        "R3": 24.3,
+        "R4": 24.5,
+        "R5": 24.3,
+        "O/P Pinion": 25.0
+      },
+      "noise": 78.0
     }
   ]
 }
@@ -96,28 +97,21 @@ Extract the EXACT data in the following JSON format:
 CRITICAL RULES:
 1. DYNAMIC COMPONENT CHANNELS:
    - Identify each individual temperature component column in the table (e.g. Input, R1, R2, R3, R4, R5, O/P Pinion).
-   - In 'metadata.channel_labels', return ONLY the array of actual component column names present in the table. If there are 7 component columns, return exactly 7 strings in channel_labels.
+   - In 'metadata.channel_labels', return ONLY the array of actual component column names present in the table.
    - DO NOT include 'Ambient'/'Ambt' or 'Noise'/'Noies' in channel_labels.
-2. AMBIENT & NOISE ARE NEVER TEMPERATURE COMPONENT CHANNELS:
-   - 'Ambt' / 'Ambient' (e.g. 24.6, 26.0, 26.4...) is the ambient reference temperature. Store this ONLY in the 'ambient' field of each interval. NEVER duplicate ambient values into a component column!
-   - 'Noies' / 'Noise' (e.g. 78, 78.4, 78.5) is the sound level in dB. Store the final/peak reading ONLY in 'metadata.noise_level_measured' (e.g. '78.5 dB'). NEVER put noise numbers into 'output_actual' or any temperature column!
-3. MAPPING INTERVALS:
-   - Map component columns in strict left-to-right order into:
-     * 1st component -> input_actual
-     * 2nd component -> body_actual
-     * 3rd component -> body2_actual
-     * 4th component -> bc1_actual
-     * 5th component -> bc2_actual
-     * 6th component -> bc3_actual
-     * 7th component -> bc4_actual
-     * 8th component -> bc5_actual (or null if absent)
-     * 9th component -> output_actual (or null if absent)
-   - If a document has fewer than 9 component columns (e.g. only 7 components), set the unused remaining actual fields to null! Do NOT put Noise or Ambient into unused fields!
-4. DIRECTION ACCURACY:
-   - Check the 'Direct' / 'Direction' column for each individual row.
-   - Initial intervals run in Clockwise direction ('CW'). Output 'CW' for initial rows.
-   - When the test switches to Counter-Clockwise ('CCW'), output 'CCW'.
-5. EXACT ROW COUNT & PRECISION: Read all digits with 100% precision. Return ONLY valid JSON.
+
+2. AMBIENT & NOISE SEPARATION:
+   - 'Ambt' / 'Ambient' (e.g. 24.6, 26.0, 26.4...) is the reference ambient. Store this ONLY in 'ambient'. NEVER put ambient into 'channel_readings'!
+   - 'Noies' / 'Noise' (e.g. 78, 78.4, 78.5) is the sound level in dB. Store in 'noise' and set 'metadata.noise_level_measured' to the peak reading (e.g. '78.5 dB').
+
+3. ACCURATE COLUMN VALUE MAPPING:
+   - In 'channel_readings', map each component header name to its exact cell value in that row.
+   - Look carefully at handwritten numbers and do not shift columns.
+
+4. DIRECTION & TIME ACCURACY:
+   - For direction: handwritten 'cw' or 'co' means 'CW'. 'ccw' means 'CCW'.
+   - For time: '12 pm' or '12.00' is '12:00 pm'.
+   - Read all digits with 100% precision. Return ONLY valid JSON.
 """
 
         # Optimize image size for lightning-fast transfer (~150KB JPEG vs 4MB PNG)
@@ -148,11 +142,7 @@ CRITICAL RULES:
                         }
                     ]
                 }
-            ],
-            "generationConfig": {
-                "response_mime_type": "application/json",
-                "temperature": 0.05
-            }
+            ]
         }
 
         # Fast priority models
@@ -185,11 +175,12 @@ CRITICAL RULES:
                 print(f"Gemini API call failed for {model_name}: {e}")
 
         return None
+
     @classmethod
     def _format_and_propagate_times(cls, raw_times: List[str], started_at: str = "") -> List[str]:
         """
         Parses all time strings in the table sequence and ensures EVERY interval
-        has a clear, standard 12-hour time format with AM/PM (e.g. '12:35 PM', '12:50 PM', '1:05 PM').
+        has a clear, standard 12-hour time format with lowercase am/pm (e.g. '12:35 pm', '12:50 pm', '1:05 pm').
         """
         parsed_entries = []
         for raw in raw_times:
@@ -197,6 +188,15 @@ CRITICAL RULES:
                 parsed_entries.append(None)
                 continue
             t = str(raw).strip()
+
+            # Handle "12 pm", "12pm", "1 pm", "10 am" without minutes
+            m_no_mm = re.match(r'^([0-9]{1,2})\s*(?:(AM|PM|am|pm))$', t, re.I)
+            if m_no_mm:
+                hh = int(m_no_mm.group(1))
+                period = m_no_mm.group(2).upper()
+                parsed_entries.append({"hh": hh, "mm": 0, "period": period, "raw": t})
+                continue
+
             # Prefix AM/PM e.g. "PM 12.35", "Pm 12:35", "am 10:00"
             m_pre = re.match(r'^(?:(AM|PM))\s*[:.\-\s]?\s*([0-9]{1,2})[:.]([0-9]{2})$', t, re.I)
             if m_pre:
@@ -205,7 +205,7 @@ CRITICAL RULES:
                 mm = int(m_pre.group(3))
                 parsed_entries.append({"hh": hh, "mm": mm, "period": period, "raw": t})
                 continue
-            
+
             # Postfix AM/PM e.g. "12:35 PM", "12.35pm", "1:05 PM"
             m_post = re.match(r'^([0-9]{1,2})[:.]([0-9]{2})\s*(?:(AM|PM))?$', t, re.I)
             if m_post:
@@ -218,7 +218,7 @@ CRITICAL RULES:
                     period = "PM"
                 parsed_entries.append({"hh": hh, "mm": mm, "period": period, "raw": t})
                 continue
-            
+
             parsed_entries.append({"hh": None, "mm": None, "period": None, "raw": t})
 
         # Determine initial period (AM or PM)
@@ -228,13 +228,13 @@ CRITICAL RULES:
                 curr_period = "PM"
             elif "AM" in started_at.upper():
                 curr_period = "AM"
-        
+
         if not curr_period:
             for entry in parsed_entries:
                 if entry and entry["period"]:
                     curr_period = entry["period"]
                     break
-        
+
         if not curr_period:
             for entry in parsed_entries:
                 if entry and entry["hh"] is not None:
@@ -287,7 +287,7 @@ CRITICAL RULES:
         if isinstance(raw_channel_labels, list):
             for l in raw_channel_labels:
                 l_str = str(l).strip()
-                if l_str and not re.search(r'^(amb|ambt|ambient|noise|noies|db|time|direct|direction|-|\s*)$', l_str, re.I):
+                if l_str and not re.search(r'^(amb|ambt|ambient|noise|noies|sound|db|time|direct|direction|-|\s*)$', l_str, re.I):
                     clean_channel_labels.append(l_str)
 
         def _get_val(d: dict, *keys, default=0.0) -> float:
@@ -303,21 +303,56 @@ CRITICAL RULES:
         started_at_raw = str(meta_dict.get("started_at", "")).strip()
         formatted_times = cls._format_and_propagate_times(raw_time_list, started_at_raw)
 
+        field_names = [
+            "input_actual", "body_actual", "body2_actual",
+            "bc1_actual", "bc2_actual", "bc3_actual", "bc4_actual",
+            "bc5_actual", "output_actual"
+        ]
+
         processed_intervals: List[TimeIntervalReading] = []
+        measured_noises: List[float] = []
+
         for idx, item in enumerate(raw_intervals):
             amb = _get_val(item, "ambient", "ambient_temp", "amb", default=28.0)
-            inp = _get_val(item, "input_actual", "input", "inp", default=0.0)
-            b1 = _get_val(item, "body_actual", "body", "body1", "b1", default=0.0)
-            b2 = _get_val(item, "body2_actual", "body2", "b2", default=0.0)
-            bc1 = _get_val(item, "bc1_actual", "bc1", "bearing_cover_1", default=0.0)
-            bc2 = _get_val(item, "bc2_actual", "bc2", "bearing_cover_2", default=0.0)
-            bc3 = _get_val(item, "bc3_actual", "bc3", "bearing_cover_3", default=0.0)
-            bc4 = _get_val(item, "bc4_actual", "bc4", "bearing_cover_4", default=0.0)
-            bc5 = _get_val(item, "bc5_actual", "bc5", "bearing_cover_5", default=0.0)
-            out = _get_val(item, "output_actual", "output", "out", default=0.0)
+            noise_val = _get_val(item, "noise", "noies", "sound", default=0.0)
+            if noise_val > 0:
+                measured_noises.append(noise_val)
 
-            direction = str(item.get("direction", "CW") or "CW").strip().upper()
-            direction = "CCW" if "CCW" in direction else "CW"
+            readings_map = item.get("channel_readings") or {}
+            channel_vals = {}
+
+            # 1. Map from channel_readings dict if available
+            if isinstance(readings_map, dict) and readings_map:
+                for ch_idx, ch_name in enumerate(clean_channel_labels):
+                    if ch_idx >= len(field_names):
+                        break
+                    target_field = field_names[ch_idx]
+                    val = 0.0
+                    for r_k, r_v in readings_map.items():
+                        if str(r_k).strip().lower() == str(ch_name).strip().lower():
+                            try:
+                                val = float(r_v)
+                            except (ValueError, TypeError):
+                                pass
+                            break
+                    channel_vals[target_field] = val
+            else:
+                # 2. Fallback to direct field mapping
+                for f_name in field_names:
+                    channel_vals[f_name] = _get_val(item, f_name, default=0.0)
+
+            inp = channel_vals.get("input_actual", 0.0)
+            b1 = channel_vals.get("body_actual", 0.0)
+            b2 = channel_vals.get("body2_actual", 0.0)
+            bc1 = channel_vals.get("bc1_actual", 0.0)
+            bc2 = channel_vals.get("bc2_actual", 0.0)
+            bc3 = channel_vals.get("bc3_actual", 0.0)
+            bc4 = channel_vals.get("bc4_actual", 0.0)
+            bc5 = channel_vals.get("bc5_actual", 0.0)
+            out = channel_vals.get("output_actual", 0.0)
+
+            raw_dir = str(item.get("direction", "CW") or "CW").strip().upper()
+            direction = "CCW" if ("CCW" in raw_dir or "COW" in raw_dir) else "CW"
 
             time_str = formatted_times[idx] if idx < len(formatted_times) else ""
 
@@ -346,10 +381,12 @@ CRITICAL RULES:
             ))
 
         noise_measured = str(meta_dict.get("noise_level_measured") or "").strip()
-        if not noise_measured or noise_measured in ["-", "None"]:
-            noise_measured = "-"
+        if (not noise_measured or noise_measured in ["-", "None"]) and measured_noises:
+            noise_measured = f"{max(measured_noises):.1f} dB".replace(".0 dB", " dB")
         elif re.match(r'^\d+(\.\d+)?$', noise_measured):
             noise_measured = f"{noise_measured} dB"
+        elif not noise_measured:
+            noise_measured = "-"
 
         noise_limit = str(meta_dict.get("noise_level_limit") or "< 85 dB").strip()
 
