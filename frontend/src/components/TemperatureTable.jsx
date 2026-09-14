@@ -516,12 +516,12 @@ export default function TemperatureTable({
                   zIndex: 12,
                   backgroundColor: "var(--table-head-bg)",
                   border: "1px solid var(--table-inner-border)",
-                  padding: "0.6rem 0.5rem",
-                  minWidth: "115px",
-                  width: "115px",
+                  padding: "0.45rem 0.35rem",
+                  minWidth: "100px",
+                  width: "100px",
                   whiteSpace: "nowrap",
                   fontWeight: 700,
-                  fontSize: "0.85rem"
+                  fontSize: "0.8rem"
                 }}
               >
                 Time
@@ -534,12 +534,12 @@ export default function TemperatureTable({
                   zIndex: 12,
                   backgroundColor: "var(--table-head-bg)",
                   border: "1px solid var(--table-inner-border)",
-                  padding: "0.6rem 0.5rem",
-                  minWidth: "90px",
-                  width: "90px",
+                  padding: "0.45rem 0.35rem",
+                  minWidth: "75px",
+                  width: "75px",
                   whiteSpace: "nowrap",
                   fontWeight: 700,
-                  fontSize: "0.85rem"
+                  fontSize: "0.8rem"
                 }}
               >
                 Direction
@@ -554,10 +554,10 @@ export default function TemperatureTable({
                     zIndex: 11,
                     backgroundColor: "var(--table-head-bg)",
                     border: "1px solid var(--table-inner-border)",
-                    padding: "0.5rem 0.4rem",
-                    minWidth: "140px",
+                    padding: "0.45rem 0.3rem",
+                    minWidth: "124px",
                     fontWeight: 700,
-                    fontSize: "0.85rem",
+                    fontSize: "0.8rem",
                     color: "var(--text-primary)"
                   }}
                 >
@@ -572,11 +572,11 @@ export default function TemperatureTable({
                   zIndex: 12,
                   backgroundColor: "var(--table-head-bg)",
                   border: "1px solid var(--table-inner-border)",
-                  padding: "0.6rem 0.5rem",
-                  minWidth: "95px",
-                  width: "95px",
+                  padding: "0.45rem 0.35rem",
+                  minWidth: "80px",
+                  width: "80px",
                   fontWeight: 700,
-                  fontSize: "0.85rem",
+                  fontSize: "0.8rem",
                   color: "var(--brand-primary)"
                 }}
               >
@@ -590,11 +590,11 @@ export default function TemperatureTable({
                   zIndex: 12,
                   backgroundColor: "var(--table-head-bg)",
                   border: "1px solid var(--table-inner-border)",
-                  padding: "0.6rem 0.5rem",
-                  minWidth: "90px",
-                  width: "90px",
+                  padding: "0.45rem 0.35rem",
+                  minWidth: "75px",
+                  width: "75px",
                   fontWeight: 700,
-                  fontSize: "0.85rem",
+                  fontSize: "0.8rem",
                   color: "var(--success-text)"
                 }}
               >
@@ -609,11 +609,11 @@ export default function TemperatureTable({
                     zIndex: 12,
                     backgroundColor: "var(--table-head-bg)",
                     border: "1px solid var(--table-inner-border)",
-                    padding: "0.6rem 0.5rem",
-                    minWidth: "95px",
-                    width: "95px",
+                    padding: "0.45rem 0.35rem",
+                    minWidth: "80px",
+                    width: "80px",
                     fontWeight: 700,
-                    fontSize: "0.85rem",
+                    fontSize: "0.8rem",
                     color: "var(--text-primary)"
                   }}
                 >
@@ -628,11 +628,11 @@ export default function TemperatureTable({
                   zIndex: 12,
                   backgroundColor: "var(--table-head-bg)",
                   border: "1px solid var(--table-inner-border)",
-                  padding: "0.6rem 0.4rem",
-                  minWidth: "60px",
-                  width: "60px",
+                  padding: "0.45rem 0.25rem",
+                  minWidth: "50px",
+                  width: "50px",
                   fontWeight: 700,
-                  fontSize: "0.8rem"
+                  fontSize: "0.78rem"
                 }}
               >
                 Action
@@ -651,14 +651,14 @@ export default function TemperatureTable({
                   <th
                     style={{
                       position: "sticky",
-                      top: "35px",
+                      top: "30px",
                       zIndex: 11,
                       backgroundColor: "var(--table-subhead-bg)",
                       border: "1px solid var(--table-inner-border)",
-                      padding: "0.4rem 0.25rem",
-                      minWidth: "70px",
-                      width: "70px",
-                      fontSize: "0.75rem",
+                      padding: "0.3rem 0.2rem",
+                      minWidth: "62px",
+                      width: "62px",
+                      fontSize: "0.725rem",
                       fontWeight: 600
                     }}
                   >
@@ -667,15 +667,15 @@ export default function TemperatureTable({
                   <th
                     style={{
                       position: "sticky",
-                      top: "35px",
+                      top: "30px",
                       zIndex: 11,
                       border: "1px solid var(--table-inner-border)",
-                      padding: "0.4rem 0.25rem",
-                      minWidth: "70px",
-                      width: "70px",
+                      padding: "0.3rem 0.2rem",
+                      minWidth: "62px",
+                      width: "62px",
                       backgroundColor: "var(--table-rise-bg)",
                       color: "var(--table-rise-text)",
-                      fontSize: "0.75rem",
+                      fontSize: "0.725rem",
                       fontWeight: 700
                     }}
                   >
@@ -703,9 +703,9 @@ export default function TemperatureTable({
                 <td
                   style={{
                     border: "1px solid var(--table-inner-border)",
-                    padding: "0.35rem 0.4rem",
-                    minWidth: "115px",
-                    width: "115px",
+                    padding: "0.2rem 0.25rem",
+                    minWidth: "100px",
+                    width: "100px",
                     textAlign: "center",
                     whiteSpace: "nowrap",
                   }}
@@ -734,9 +734,9 @@ export default function TemperatureTable({
                 <td
                   style={{
                     border: "1px solid var(--table-inner-border)",
-                    padding: "0.35rem 0.3rem",
-                    minWidth: "90px",
-                    width: "90px",
+                    padding: "0.2rem 0.25rem",
+                    minWidth: "75px",
+                    width: "75px",
                     textAlign: "center",
                     whiteSpace: "nowrap",
                   }}
@@ -773,7 +773,9 @@ export default function TemperatureTable({
                       <td
                         style={{
                           border: "1px solid var(--table-inner-border)",
-                          padding: "0.25rem",
+                          padding: "0.15rem 0.2rem",
+                          minWidth: "62px",
+                          width: "62px"
                         }}
                       >
                         <input
@@ -794,8 +796,11 @@ export default function TemperatureTable({
                       <td
                         style={{
                           border: "1px solid var(--table-inner-border)",
-                          padding: "0.25rem",
+                          padding: "0.15rem 0.2rem",
+                          minWidth: "62px",
+                          width: "62px",
                           fontWeight: 700,
+                          fontSize: "0.8rem",
                           color:
                             riseVal > thresholdLimit
                               ? "var(--danger-text)"
@@ -813,9 +818,9 @@ export default function TemperatureTable({
                 <td
                   style={{
                     border: "1px solid var(--table-inner-border)",
-                    padding: "0.25rem",
-                    minWidth: "95px",
-                    width: "95px"
+                    padding: "0.15rem 0.2rem",
+                    minWidth: "80px",
+                    width: "80px"
                   }}
                 >
                   <input
@@ -836,7 +841,9 @@ export default function TemperatureTable({
                       color: "var(--brand-primary)",
                       backgroundColor: "var(--bg-card)",
                       border: "1px solid var(--border-color)",
-                      borderRadius: "0.35rem"
+                      borderRadius: "0.3rem",
+                      padding: "0.15rem 0.2rem",
+                      fontSize: "0.8rem"
                     }}
                   />
                 </td>
@@ -845,15 +852,15 @@ export default function TemperatureTable({
                 <td
                   style={{
                     border: "1px solid var(--table-inner-border)",
-                    padding: "0.25rem",
-                    minWidth: "90px",
-                    width: "90px"
+                    padding: "0.15rem 0.2rem",
+                    minWidth: "75px",
+                    width: "75px"
                   }}
                 >
                   <input
                     type="text"
                     className="table-input-field"
-                    placeholder="e.g. 72.0"
+                    placeholder="72.0"
                     value={row.noise !== "" && row.noise !== undefined && row.noise !== null ? (typeof row.noise === "number" ? row.noise.toFixed(1) : row.noise) : ""}
                     onChange={(e) => {
                       const updated = [...intervals];
@@ -879,7 +886,9 @@ export default function TemperatureTable({
                       color: "var(--success-text)",
                       backgroundColor: "var(--bg-card)",
                       border: "1px solid var(--border-color)",
-                      borderRadius: "0.35rem"
+                      borderRadius: "0.3rem",
+                      padding: "0.15rem 0.2rem",
+                      fontSize: "0.8rem"
                     }}
                   />
                 </td>
@@ -889,15 +898,15 @@ export default function TemperatureTable({
                   <td
                     style={{
                       border: "1px solid var(--table-inner-border)",
-                      padding: "0.25rem",
-                      minWidth: "95px",
-                      width: "95px"
+                      padding: "0.15rem 0.2rem",
+                      minWidth: "80px",
+                      width: "80px"
                     }}
                   >
                     <input
                       type="text"
                       className="table-input-field"
-                      placeholder="e.g. 0.59"
+                      placeholder="0.59"
                       value={row.vibration !== "" && row.vibration !== undefined && row.vibration !== null ? (typeof row.vibration === "number" ? row.vibration.toFixed(2) : row.vibration) : ""}
                       onChange={(e) => {
                         const updated = [...intervals];
@@ -923,7 +932,9 @@ export default function TemperatureTable({
                         color: "var(--text-primary)",
                         backgroundColor: "var(--bg-card)",
                         border: "1px solid var(--border-color)",
-                        borderRadius: "0.35rem"
+                        borderRadius: "0.3rem",
+                        padding: "0.15rem 0.2rem",
+                        fontSize: "0.8rem"
                       }}
                     />
                   </td>
@@ -933,7 +944,7 @@ export default function TemperatureTable({
                 <td
                   style={{
                     border: "1px solid var(--table-inner-border)",
-                    padding: "0.25rem",
+                    padding: "0.15rem 0.2rem",
                   }}
                 >
                   <button
@@ -946,9 +957,8 @@ export default function TemperatureTable({
                       background: "transparent",
                       cursor: intervals.length <= 1 ? "not-allowed" : "pointer",
                       opacity: intervals.length <= 1 ? 0.3 : 0.75,
-                      fontSize: "0.9rem",
+                      fontSize: "0.85rem",
                       transition: "transform 0.15s ease, opacity 0.15s ease",
-                      padding: "0.2rem"
                     }}
                     onMouseEnter={(e) => { if (intervals.length > 1) e.currentTarget.style.opacity = '1'; }}
                     onMouseLeave={(e) => { if (intervals.length > 1) e.currentTarget.style.opacity = '0.75'; }}
